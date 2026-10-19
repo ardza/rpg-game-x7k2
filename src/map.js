@@ -21,11 +21,12 @@ class TileMap {
   roomInfo(x, y) { const out = x < 0 || y < 0 || x >= this.width || y >= this.height; return { name: out ? "wall" : this.def.cells[this.grid[y][x]], solid: out || this.def.collision[y][x] === 1, encounter: false }; }
   tileAt(x, y) { if (x < 0 || y < 0 || x >= this.width || y >= this.height) return 1; return this.grid[y][x]; }
   info(x, y) { if (this.def.room) return this.roomInfo(x, y); return GAME_DATA.tiles[this.tileAt(x, y)]; }
-  isSolid(x, y) { return this.info(x, y).solid || this.blocked.has(x + "," + y); }
+  gone(d) { return !!(d.group && this.defeated && this.defeated.includes(d.group)); } // v0.4.0: beaten enemy groups vanish
+  isSolid(x, y) { return this.info(x, y).solid || (this.blocked.has(x + "," + y) && !(this.def.decor || []).some(d => d.solid && d.x === x && d.y === y && this.gone(d))); }
   renderDecor(ctx, camX, camY) {
     for (const d of this.def.decor || []) {
       const x = d.x * TILE - camX, y = d.y * TILE - camY;
-      if (d.hidden) continue;
+      if (d.hidden || this.gone(d)) continue;
       if (d.cell) { const s = d.cell * TILE_SCALE; if (Sprites.draw(ctx, d.sprite, x + TILE / 2 - s / 2, y + TILE - s, s, s, (d.col || 0) * d.cell, d.row * d.cell, d.cell, d.cell)) continue; ctx.fillStyle = d.color || "#7a3b8f"; ctx.fillRect(x + 8, y + 4, TILE - 16, TILE - 8); }
       else if (!Sprites.draw(ctx, d.sprite, x, y + TILE - d.h * TILE_SCALE, d.w * TILE_SCALE, d.h * TILE_SCALE)) { ctx.fillStyle = "#9a6b3f"; ctx.fillRect(x + 8, y + 8, TILE - 16, TILE - 16); }
     }

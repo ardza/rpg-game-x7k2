@@ -2,13 +2,16 @@
 const Economy = {
   // Card's own shop price; holo copies are worth x1.5, floored.
   cardPrice(cardId, holo = false) { const c = GAME_DATA.cards[cardId]; return holo ? Math.floor(c.price * GAME_DATA.holoPriceMult) : c.price; },
+  addCoins(game, n) { game.inventory.addMoney(n); return game.inventory.money; }, // DEV-CHEATS: used by Admin Cheats
+  notSold(cardId) { return !!GAME_DATA.rarities[GAME_DATA.cards[cardId].rarity].notSold; }, // v0.4.3: Legendary (Final Boss Boomer) never sold
   isCommon(cardId) { return GAME_DATA.cards[cardId].rarity === "C"; },
   // Sell-back: 20% of the card's price, floored. Commons (holo included) can't be sold -> null.
-  sellValue(cardId, holo = false) { return this.isCommon(cardId) ? null : Math.floor(this.cardPrice(cardId, holo) * GAME_DATA.sellRate); },
+  sellValue(cardId, holo = false) { return this.isCommon(cardId) || this.notSold(cardId) ? null : Math.floor(this.cardPrice(cardId, holo) * GAME_DATA.sellRate); },
   // Sell one copy of a collection entry. Returns { ok, coins } or { ok:false, reason: "common" | "holoCommon" | "missing" | "deck" }.
   sell(game, uid) {
     const e = game.collection.list.find(x => x.uid === uid); if (!e) return { ok: false, reason: "missing" };
     if (this.isCommon(e.cardId)) return { ok: false, reason: e.holo ? "holoCommon" : "common" };
+    if (this.notSold(e.cardId)) return { ok: false, reason: "notSold" };
     if (e.copies <= 1 && game.deck.includes(uid)) return { ok: false, reason: "deck" };
     const coins = this.sellValue(e.cardId, e.holo); game.collection.removeCopy(uid); game.inventory.addMoney(coins);
     return { ok: true, coins };
@@ -34,7 +37,7 @@ const Economy = {
     for (const [r, p] of Object.entries(P.odds)) {
       if (r === "C") continue;
       const ids = Object.keys(GAME_DATA.cards).filter(id => GAME_DATA.cards[id].rarity === r);
-      const val = holo => ids.length ? ids.reduce((s, id) => s + this.sellValue(id, holo), 0) / ids.length
+      const val = holo => ids.length ? ids.reduce((s, id) => s + (this.sellValue(id, holo) || 0), 0) / ids.length
         : Math.floor((holo ? Math.floor(GAME_DATA.rarities[r].price.avg * GAME_DATA.holoPriceMult) : GAME_DATA.rarities[r].price.avg) * GAME_DATA.sellRate);
       slot += p * ((1 - h) * val(false) + h * val(true));
     }

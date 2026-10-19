@@ -4,7 +4,7 @@ const RARITY_ORDER = ["C", "U", "R", "E", "L"];
 const Packs = {
   cardsOf(r) { return Object.keys(GAME_DATA.cards).filter(id => GAME_DATA.cards[id].rarity === r); },
   rollRarity(odds) { let x = Formulas.rand(); for (const r of RARITY_ORDER) { if (odds[r] == null) continue; if (x < odds[r]) return r; x -= odds[r]; } return "C"; },
-  // Returns 5 slots { cardId, holo, rarity, rolled, rerolled, pity }. Legendary reroll (v0.4.1): no L card yet -> Epic.
+  // Returns 5 slots { cardId, holo, rarity, rolled, rerolled, pity }. Legendary reroll (v0.4.1) only fires if a rarity has no cards; v0.4.3 Final Boss Boomer is a real Legendary.
   roll(tier, pityCounter = 0) {
     const P = GAME_DATA.packs[tier], pity = GAME_DATA.pity, out = [];
     const pityOn = pity.tiers.includes(tier) && pityCounter >= pity.after;

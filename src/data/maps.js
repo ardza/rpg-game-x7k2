@@ -15,7 +15,7 @@ GAME_DATA.tiles = {
 };
 // Sparkle cell 7 is used as an overlay for plain-sight hidden cards (GAME_DATA.cardSparkleFrame).
 GAME_DATA.cardSparkleFrame = 7;
-GAME_DATA.tileset = { src: "assets/style2/tiles/tileset_48.png", tileSize: 48, columns: 23 }; // v0.3.5: 1104x48, 23 cells in one row
+GAME_DATA.tileset = { src: "assets/style2/tiles/tileset_48.png", tileSize: 48, columns: 44 }; // v0.4.3: 2112x48, 44 cells in one row (cells 0-22 unchanged; 23-43 for v0.4.4, tiles/tileset_48_v044.json)
 GAME_DATA.maps = {
   starter: {
     name: "Mossy Hollow", width: 20, height: 15, spawn: { x: 2, y: 2 },

@@ -13,8 +13,8 @@ class Roamers {
     for (const z of this.zones) while (this.count(z) < z.maxActive && this.spawn(z, null)) {}
   }
   zoneTiles(z) {
-    const [x0, y0, w, h] = z.rect, out = [];
-    for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) if ((z.tiles || [3]).includes(this.map.tileAt(x, y))) out.push(x + "," + y);
+    const [x0, y0, w, h] = z.rect, out = [], solidDecor = new Set((this.map.def.decor || []).filter(d => d.solid || d.group).map(d => d.x + "," + d.y)); // v0.4.1: never on a group marker
+    for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) if ((z.tiles || [3]).includes(this.map.tileAt(x, y)) && !solidDecor.has(x + "," + y)) out.push(x + "," + y);
     return new Set(out);
   }
   count(z) { return this.list.filter(r => r.zone === z && !r.flee).length; }

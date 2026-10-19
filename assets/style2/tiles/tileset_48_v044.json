@@ -1,0 +1,132 @@
+{
+ "base_cells": 23,
+ "columns": 44,
+ "new": [
+  {
+   "cell": 23,
+   "name": "tall_grass_b",
+   "flag": "walk",
+   "note": "encounter variant (denser, darker)"
+  },
+  {
+   "cell": 24,
+   "name": "tall_grass_edge_n",
+   "flag": "walk",
+   "note": "encounter; tall grass with short-grass fringe on top"
+  },
+  {
+   "cell": 25,
+   "name": "house2_roof",
+   "flag": "solid",
+   "note": "house 2 teal roof (use roof_edge_* 17-20 shapes as overlay if wanted)"
+  },
+  {
+   "cell": 26,
+   "name": "house2_wall",
+   "flag": "solid",
+   "note": "house 2 blue siding"
+  },
+  {
+   "cell": 27,
+   "name": "house2_window",
+   "flag": "solid",
+   "note": "house 2 window + flower box"
+  },
+  {
+   "cell": 28,
+   "name": "house2_door",
+   "flag": "warp",
+   "note": "house 2 yellow door, solid warp like 21 (facade-only until it has an interior)"
+  },
+  {
+   "cell": 29,
+   "name": "house_wall_window",
+   "flag": "solid",
+   "note": "window for house 1 paper siding (matches cell 21 wall)"
+  },
+  {
+   "cell": 30,
+   "name": "cafe_awning",
+   "flag": "solid",
+   "note": "BURNT BEANS cafe: striped awning (top row)"
+  },
+  {
+   "cell": 31,
+   "name": "cafe_sign_l",
+   "flag": "solid",
+   "note": "cafe sign left half \"BURNT\""
+  },
+  {
+   "cell": 32,
+   "name": "cafe_sign_r",
+   "flag": "solid",
+   "note": "cafe sign right half \"BEANS\""
+  },
+  {
+   "cell": 33,
+   "name": "cafe_window",
+   "flag": "solid",
+   "note": "cafe menu window \"OAT? $11\""
+  },
+  {
+   "cell": 34,
+   "name": "cafe_door",
+   "flag": "warp",
+   "note": "cafe door \"OPEN-ISH\", solid warp-style, FACADE-ONLY (no interior)"
+  },
+  {
+   "cell": 35,
+   "name": "tower_top",
+   "flag": "solid",
+   "note": "HUSTLE HQ roofline + antenna, top row"
+  },
+  {
+   "cell": 36,
+   "name": "tower_windows",
+   "flag": "solid",
+   "note": "HUSTLE HQ 4-pane floor, stack any height"
+  },
+  {
+   "cell": 37,
+   "name": "tower_sign",
+   "flag": "solid",
+   "note": "HUSTLE HQ purple sign"
+  },
+  {
+   "cell": 38,
+   "name": "tower_door",
+   "flag": "warp",
+   "note": "HUSTLE HQ glass doors, solid warp-style, FACADE-ONLY"
+  },
+  {
+   "cell": 39,
+   "name": "path_v",
+   "flag": "walk",
+   "note": "vertical path, grass both sides (exit road)"
+  },
+  {
+   "cell": 40,
+   "name": "path_h",
+   "flag": "walk",
+   "note": "horizontal path, grass both sides"
+  },
+  {
+   "cell": 41,
+   "name": "path_exit_arrow",
+   "flag": "walk",
+   "note": "vertical path with painted arrow pointing up/out"
+  },
+  {
+   "cell": 42,
+   "name": "soon_barrier",
+   "flag": "solid",
+   "note": "striped road barrier on path (blocks the exit)"
+  },
+  {
+   "cell": 43,
+   "name": "soon_sign",
+   "flag": "solid",
+   "note": "\"COMING SOON\" sign on grass"
+  }
+ ]
+}

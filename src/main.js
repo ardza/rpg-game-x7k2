@@ -20,7 +20,7 @@ class Game {
     this.hiddenFound = s ? s.hiddenFound.slice() : []; this.defeatedGroups = s && Array.isArray(s.defeatedGroups) ? s.defeatedGroups : [];
     this.flags = s ? Object.assign({}, s.flags) : {}; this.settings = Object.assign({ wideWindows: false }, s && s.settings);
     this.party = []; // LEGACY creature party for the old 1v1 battle (not saved)
-    this.roamers = this.map.def.roam ? new Roamers(this.map) : null;
+    this.roamers = this.map.def.roam ? new Roamers(this.map) : null; this.map.defeated = this.defeatedGroups;
     this.introIdx = 0; this.momT = 0; if (this.state === undefined && !this.flags.momIntroDone) this.player.facing = GAME_DATA.momWalkIn.playerFacing; this.notice = Save.discarded ? T("oldSave") : null;
     this.state = this.flags.momIntroDone ? "overworld" : "intro";
     if (this.state === "overworld" && this.notice) { this.talk = this.notice; this.notice = null; }
@@ -30,17 +30,30 @@ class Game {
   // v0.3.4 rooms: move to another map (rooms <-> overworld). Rooms fire their "enter" interact on arrival.
   warp(mapId, x, y, facing) {
     const def = GAME_DATA.maps[mapId]; if (!def) return false;
-    this.mapId = mapId; this.map = new TileMap(def); this.player = new Player(x, y); if (facing) this.player.facing = facing;
-    this.roamers = def.roam ? new Roamers(this.map) : null; this.onStep(); return true;
+    const prevDef = this.map && this.map.def; this.mapId = mapId; this.map = new TileMap(def); this.map.defeated = this.defeatedGroups; this.player = new Player(x, y); if (facing) this.player.facing = facing;
+    const fromRoom = !!(prevDef && prevDef.room);
+    this.roamers = def.roam ? new Roamers(this.map) : null; this.onStep();
+    // v0.4.1: room "enter" lines (shop_entry) fire only on arrival from the overworld, never on a later step
+    const it = def.room && !fromRoom && this.interactAt(x, y, "enter"); if (it && !this.talk) this.say(GAME_DATA.roomText[it.key], null);
+    return true;
   }
   enterDoor(d) { const m = GAME_DATA.maps[d.to], e = m.entry || m.spawn; return this.warp(d.to, e.x, e.y, e.facing || "up"); }
   say(key, bust = "player_bust") { this.talk = T(key); this.talkBust = bust; }
   interactAt(x, y, trigger) { return (this.map.def.interact || []).find(i => i.trigger === trigger && [i.tile].concat(i.also || []).some(t => t[0] === x && t[1] === y)); }
   onStep() { // after a completed step (or arrival): room exit / enter triggers / plain hidden cards
     const { x, y } = this.player, def = this.map.def;
-    if (def.room && def.exit && x === def.exit.x && y === def.exit.y) { const t = def.exit.to; return this.warp(t.map, t.x, t.y, t.facing); }
-    const it = def.room && this.interactAt(x, y, "enter"); if (it) return this.say(GAME_DATA.roomText[it.key], null);
+    if (def.room && def.exit && x === def.exit.x && y === def.exit.y) { const t = def.exit.to; this.warp(t.map, t.x, t.y, t.facing);
+      if (def.exitText) this.say(def.exitText, null); return true; } // v0.4.1: shop_exit plays once on leaving
     const h = this.hiddenAt(x, y, "plain"); if (h) this.pickUp(h);
+  }
+  // v0.4.0 party battles: visible enemy groups on the map (decor with group id)
+  groupAt(x, y) { return (this.map.def.decor || []).find(d => d.group && d.x === x && d.y === y && !this.map.gone(d)); }
+  startPartyBattle(groupId, opts) { this.pbattle = new PartyBattle(this, groupId, opts); this.setState("pbattle"); return this.pbattle; }
+  finishPartyBattle() { // statuses clear after the fight; HP is restored (no healing spot yet); results saved (v4)
+    const b = this.pbattle, res = b.result; this.pbattle = null; this.lastBattle = { group: b.groupId, result: res, reward: b.reward || null };
+    this.stats.hp = Formulas.hpAt(GAME_DATA.pb.player.base.hp, this.stats.level);
+    if (res === "lose") { const sp = GAME_DATA.maps[GAME_DATA.startMap].spawn; this.warp(GAME_DATA.startMap, sp.x, sp.y, "down"); }
+    this.setState("overworld"); Save.save(this);
   }
   openShop() { this.menu = new PauseMenu(this); this.menu.view = "shop"; this.menu.tab = 0; this.menu.sel = 0; this.menu.refusals = 0; this.menu.direct = true; this.setState("menu"); }
   finishIntro() {
@@ -67,6 +80,7 @@ class Game {
         const door = (this.map.def.doors || []).find(d => d.x === fx && d.y === fy); if (door) return this.enterDoor(door);
         const npc = (this.map.def.decor || []).find(d => d.opens && ((d.x === fx && d.y === fy) || (d.reach || []).some(r => r[0] === fx && r[1] === fy)));
         if (npc) return this.openShop();
+        const grp = this.groupAt(fx, fy); if (grp) return this.startPartyBattle(grp.group);
         const it = this.map.def.room && this.interactAt(fx, fy, "face"); if (it) return this.say(GAME_DATA.roomText[it.key]);
         const d = (this.map.def.decor || []).find(d => d.text && d.x === fx && d.y === fy);
         if (d) { // text may be a list of keys: plays in order, then loops (per NPC)
@@ -76,7 +90,8 @@ class Game {
       }
       if (!this.player.moving && !this.talk) for (const d of ["up", "down", "left", "right"]) if (Input.isDown(d)) { // walk into a door
         const door = (this.map.def.doors || []).find(o => o.x === this.player.x + DIRS[d][0] && o.y === this.player.y + DIRS[d][1]);
-        if (door) { this.player.facing = d; return this.enterDoor(door); } break; }
+        if (door) { this.player.facing = d; return this.enterDoor(door); }
+        const grp = this.groupAt(this.player.x + DIRS[d][0], this.player.y + DIRS[d][1]); if (grp) { this.player.facing = d; return this.startPartyBattle(grp.group); } break; }
       if (GAME_DATA.legacyCombat && this.party.length && this.roamers) {
         // 8A (legacy): stepping toward a roamer's tile starts that battle instead of moving
         if (!this.player.moving) for (const d of ["up", "down", "left", "right"]) if (Input.isDown(d)) {
@@ -98,6 +113,8 @@ class Game {
         if (rid && res === "run") this.roamers.setFlee(rid);
         this.battle = null; this.setState("overworld");
       }
+    } else if (this.state === "pbattle") {
+      this.pbattle.update(dt); if (this.pbattle.done) this.finishPartyBattle();
     } else if (this.state === "menu") {
       this.menu.update(dt); if (this.menu.closed) { this.menu = null; this.setState("overworld"); }
     }
@@ -116,7 +133,7 @@ class Game {
     const L = GAME_DATA.momIntro[Math.min(this.introIdx, GAME_DATA.momIntro.length - 1)];
     ctx.font = "bold 16px monospace"; ctx.fillText(L.who, 44, 52);
     ctx.font = "16px monospace"; UI.wrap(ctx, "\"" + L.line + "\"", 630).forEach((l, i) => ctx.fillText(l, 44, 80 + i * 22));
-    ctx.font = "12px monospace"; ctx.fillText((this.introIdx + 1) + "/" + GAME_DATA.momIntro.length + "  Z ▶", 610, 140);
+    ctx.font = "12px monospace"; ctx.fillText("▶", 670, 140); // v0.4.3: arrow only (Z still advances)
   }
   renderWorld(ctx) {
     const camX = Math.max(0, Math.min(this.player.px + TILE / 2 - this.canvas.width / 2, this.map.width * TILE - this.canvas.width));
@@ -137,6 +154,7 @@ class Game {
     const ctx = this.ctx; ctx.fillStyle = "#000"; ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     if (this.state === "intro") return this.renderIntro(ctx);
     if (this.state === "battle") { this.battle.render(ctx); return; }
+    if (this.state === "pbattle") { this.pbattle.render(ctx); return; }
     this.renderWorld(ctx);
     if (this.talk) { const b = this.talkBust && Sprites.get(this.talkBust) ? 96 : 0; // player portrait for self-talk lines (v0.3.4)
       if (b) Sprites.draw(ctx, this.talkBust, 24, 322, 96, 96);

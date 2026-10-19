@@ -18,13 +18,24 @@ const CardDraw = {
   }
 };
 class PauseMenu {
-  constructor(game) { this.game = game; this.options = ["Binder", "Bag", "Shop", "Save", "Close"]; this.idx = 0; this.view = "root"; this.msg = ""; this.closed = false; this.sel = 0; }
+  constructor(game) { this.game = game; this.options = ["Binder", "Bag", "Shop", "Save", "Close"];
+    if (window.DEV_CHEATS && window.DevCheats) this.options.splice(4, 0, DevCheats.label); // DEV-CHEATS
+    this.idx = 0; this.view = "root"; this.msg = ""; this.closed = false; this.sel = 0; }
   update(dt = 0) {
     const g = this.game;
+    if (this.cheat) { if (this.cheat.done) this.cheat = null; return; } // DEV-CHEATS: text box owns input
     if (this.pack) { this.pack.update(dt); if (this.pack.done) { const again = this.pack.again && this.pack.tier; this.pack = null; this.view = "binder"; this.sel = 0;
-      if (again) this.openPack(again); else this.confirmLock = GAME_DATA.packConfirmLockMs; } return; }
-    // v0.3.5 mash fix: after a pack screen closes, Z/confirm is ignored for 500ms (Binder, Bag and everywhere in the menu)
-    if (this.confirmLock > 0) { this.confirmLock -= dt * 1000; if (Input.wasPressed("a")) return; }
+      if (again) this.openPack(again); else { this.confirmLock = GAME_DATA.packConfirmLockMs; this.needRelease = true; } } return; }
+    // Mash fix (v0.3.5 + v0.3.6): after a pack screen closes, Z is ignored for 500ms AND until Z has been released and pressed again.
+    if (this.confirmLock > 0) this.confirmLock -= dt * 1000;
+    if (this.needRelease && !Input.isDown("a")) this.needRelease = false;
+    if ((this.confirmLock > 0 || this.needRelease) && Input.wasPressed("a")) return;
+    if (this.confirm) { // v0.3.6: "Open it?" before EVERY pack open from Bag/Binder; No selected by default
+      if (Input.wasPressed("up") || Input.wasPressed("down")) this.confirm.choice ^= 1;
+      if (Input.wasPressed("b") || Input.wasPressed("menu")) { this.confirm = null; return; }
+      if (Input.wasPressed("a")) { const c = this.confirm; this.confirm = null; if (c.choice === 0) this.openPack(c.tier); }
+      return;
+    }
     if (this.view === "shop") return this.updateShop();
     if (this.view === "binder") {
       const n = g.collection.sorted().length;
@@ -33,7 +44,7 @@ class PauseMenu {
       if (n && Input.wasPressed("down")) this.sel = (this.sel + 4) % n;
       if (n && Input.wasPressed("left")) this.sel = (this.sel + n - 1) % n;
       if (n && Input.wasPressed("right")) this.sel = (this.sel + 1) % n;
-      if (Input.wasPressed("a")) { const t = Packs.firstOwned(g); if (t) this.openPack(t); else this.msg = T("packNone"); }
+      if (Input.wasPressed("a")) { const t = Packs.firstOwned(g); if (t) this.requestOpen(t); else this.msg = T("packNone"); }
       return;
     }
     if (this.view === "bag") { // v0.3.3: cursor over bag rows; Z on a pack opens it
@@ -41,7 +52,7 @@ class PauseMenu {
       if (Input.wasPressed("b") || Input.wasPressed("menu")) { this.view = "root"; this.msg = ""; return; }
       if (n && Input.wasPressed("up")) this.sel = (this.sel + n - 1) % n;
       if (n && Input.wasPressed("down")) this.sel = (this.sel + 1) % n;
-      if (n && Input.wasPressed("a")) { const id = rows[Math.min(this.sel, n - 1)].id; if (/^pack_/.test(id)) this.openPack(id.slice(5)); }
+      if (n && Input.wasPressed("a")) { const id = rows[Math.min(this.sel, n - 1)].id; if (/^pack_/.test(id)) this.requestOpen(id.slice(5)); }
       return;
     }
     if (this.view !== "root") { if (Input.wasPressed("a") || Input.wasPressed("b")) { this.view = "root"; this.msg = ""; } return; }
@@ -52,10 +63,12 @@ class PauseMenu {
     if (Input.wasPressed("a")) {
       const o = this.options[this.idx];
       if (o === "Close") this.closed = true;
+      else if (window.DEV_CHEATS && o === DevCheats.label) { this.cheat = new CheatInput(this); return; } // DEV-CHEATS
       else if (o === "Save") { this.view = "msg"; this.msg = Save.save(g) ? T("saved") : T("saveFailed"); }
       else { this.view = o.toLowerCase(); this.sel = 0; this.msg = ""; this.tab = 0; this.offer = null; this.refusals = 0; }
     }
   }
+  requestOpen(tier) { this.confirm = { tier, choice: 1 /* No */ }; this.msg = ""; }
   openPack(tier) { const r = Packs.open(this.game, tier); if (r.ok) { this.pack = new PackOpenScreen(this.game, tier, r.cards); this.msg = ""; } return r; }
   // binder_page_720x528: 4x2 pockets 130x186 at x=90+150c, y=50+230r. 8 cards per page; frame fallback when the page is missing.
   renderBinder(ctx) {
@@ -120,8 +133,14 @@ class PauseMenu {
       ctx.fillText("> Trade 50 Commons for 1 Basic Pack", X + 24, Y + 152); ctx.fillText("Traded in so far: " + g.commonsTradedIn, X + 24, Y + 176); }
     if (this.msg) { ctx.font = "12px monospace"; UI.wrap(ctx, this.msg, W - 50).forEach((l, i) => ctx.fillText(l, X + 24, Y + 268 - 16 + i * 15 - (UI.wrap(ctx, this.msg, W - 50).length - 1) * 15)); }
   }
+  renderConfirm(ctx) { const c = this.confirm;
+    UI.frame(ctx, 160, 200, 400, 130); ctx.fillStyle = UI.textColor(); ctx.font = "16px monospace";
+    ctx.font = "14px monospace"; UI.wrap(ctx, T("packConfirm", { pack: GAME_DATA.packs[c.tier].name }), 350).forEach((l, i) => ctx.fillText(l, 184, 232 + i * 18)); ctx.font = "16px monospace";
+    ["Yes", "No"].forEach((o, i) => ctx.fillText((i === c.choice ? "> " : "  ") + o, 200, 292 + i * 22)); }
   render(ctx) {
     if (this.pack) return this.pack.render(ctx);
+    if (this.cheat) { UI.frame(ctx, 400, 20, 240, 440); return this.cheat.render(ctx); } // DEV-CHEATS
+    if (this.confirm) { const v = this.view; (v === "binder" ? this.renderBinder(ctx) : UI.frame(ctx, 400, 20, 240, 440)); return this.renderConfirm(ctx); }
     if (this.view === "binder") return this.renderBinder(ctx);
     if (this.view === "shop") return this.renderShop(ctx);
     UI.frame(ctx, 400, 20, 240, 440); ctx.fillStyle = UI.textColor(); ctx.font = "16px monospace";

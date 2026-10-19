@@ -24,6 +24,7 @@ for (const [id, r] of Object.entries(GAME_DATA.roomDefs)) {
     exit: { x: src.exit[0], y: src.exit[1], to: r.exitTo }, interact: src.interact, decor, hidden: [] };
 }
 // Overworld shop door (tile 6 at 15,5) leads into the shop.
+GAME_DATA.maps.shop.exitText = "roomShopExit"; // v0.4.1 battle_text.md shop_exit
 GAME_DATA.maps.starter.doors = [{ x: 15, y: 5, to: "shop" }, { x: 7, y: 4, to: "bedroom" }]; // v0.3.5 house door (tile 8) -> bedroom
 GAME_DATA.sprites.images.npc_shopkeeper = "assets/style2/overworld/shopkeeper_walk_48.png";
 GAME_DATA.maps.bedroom.entry = GAME_DATA.roomDefs.bedroom.entry = { x: 7, y: 9, facing: "up" }; // entering from the house door: just inside, above the exit

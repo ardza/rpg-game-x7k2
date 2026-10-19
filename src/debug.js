@@ -10,6 +10,7 @@ const Debug = {
   init(target) {
     try { this.open = this.enabled = /[?&]debug=1/.test(location.search); } catch (e) {}
     target.addEventListener("keydown", e => {
+      if (window.Input && Input.textSink) return; // DEV-CHEATS: typing in Admin Cheats never toggles/uses debug
       if (e.code === "Backquote") { this.open = !this.open; return; }
       if (this.open) this.handle(e.code);
     });
@@ -18,6 +19,8 @@ const Debug = {
     const g = window.game; if (!g) return;
     if (code === "KeyG") { g.inventory.addMoney(100); this.msg = "+100 coins"; return; }
     if (code === "KeyP") { g.inventory.addPack("basic"); this.msg = "+1 Basic Pack"; return; }
+    if (code === "KeyY") { this.autoPerfect = !this.autoPerfect; this.msg = "auto-Perfect " + (this.autoPerfect ? "on" : "off"); return; }
+    if (code === "KeyN") { const ids = Object.keys(GAME_DATA.enemyGroups); this.grp = ((this.grp ?? -1) + 1) % ids.length; g.startPartyBattle(ids[this.grp]); this.open = false; this.msg = "group " + ids[this.grp]; return; }
     if (code === "KeyK") { const ids = Object.keys(GAME_DATA.cards), id = ids[Math.floor(Math.random() * ids.length)]; g.collection.add(id, false); this.msg = "+card " + id; return; }
     if (!g.party.length) { if (code !== "KeyE") return; g.party = [makeCreature("brazzle", 5)]; }
     const sp = Object.keys(GAME_DATA.creatures), lead = g.party[0];
