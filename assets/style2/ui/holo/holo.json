@@ -1,0 +1,30 @@
+{
+ "panel": {
+  "file": "holo_9slice_48.png",
+  "slice": 16
+ },
+ "scan": {
+  "file": "holo_scan_4.png",
+  "use": "createPattern repeat, draw inside panel inset 3px, after fill, before text"
+ },
+ "chevron": {
+  "file": "holo_chevron_16x22.png",
+  "use": "cursor left of selected item, vertically centred on 22px text"
+ },
+ "select": {
+  "file": "holo_select_48x32.png",
+  "caps": 8,
+  "use": "3-slice horizontal behind selected row, height 32"
+ },
+ "header": {
+  "file": "holo_header_48x24.png",
+  "caps": 8,
+  "use": "3-slice across top of panel at inset 6px; label text 13px bold ACCENT e.g. MENU // SYS"
+ },
+ "colors": {
+  "text": "#d8f6ff",
+  "accent": "#3ff0e0",
+  "muted": "#7fa9c4",
+  "glass": "#0a1222"
+ }
+}

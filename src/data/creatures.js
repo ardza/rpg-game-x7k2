@@ -34,7 +34,7 @@ GAME_DATA.sprites = {
   images: { player: "assets/style2/overworld/player_walk_48.png", npc_mom: "assets/style2/overworld/mom_walk_48.png", npc_dad: "assets/style2/overworld/dad_walk_48.png",
     npc_ricky: "assets/style2/overworld/ricky_walk_48.png", npc_unboxer: "assets/style2/overworld/unboxer_walk_48.png", deco_sign: "assets/style2/tiles/sign_48.png",
     mom_bust: "assets/style2/npc/mom_bust_96.png", dad_bust: "assets/style2/npc/dad_shed_bust_96.png",
-    ui_dialog: "assets/style2/ui/dialog_9slice_48.png", ui_coin: "assets/style2/ui/coin_32.png",
+    ui_dialog: "assets/style2/ui/dialog_9slice_48.png", ui_holo: "assets/style2/ui/holo/holo_9slice_48.png", ui_holo_scan: "assets/style2/ui/holo/holo_scan_4.png", ui_holo_chevron: "assets/style2/ui/holo/holo_chevron_16x22.png", ui_holo_header: "assets/style2/ui/holo/holo_header_48x24.png", ui_holo_select: "assets/style2/ui/holo/holo_select_48x32.png", ui_coin: "assets/style2/ui/coin_32.png",
     ui_shop: "assets/style2/ui/shop_frame_360x240.png", shopkeeper_bust: "assets/style2/npc/shopkeeper_bust_96.png", ui_binder: "assets/style2/ui/binder_page_720x528.png" }
 };
 for (const id of Object.keys(GAME_DATA.creatures)) {

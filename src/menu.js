@@ -150,7 +150,7 @@ class PauseMenu {
   renderConfirm(ctx) { const c = this.confirm;
     ctx.font = UI.font("menu"); const lh = UI.sizes.menu + 8, W = UI.wrap(ctx, c.kind === "reset" ? T("resetConfirm") : T("packConfirm", { pack: GAME_DATA.packs[c.tier].name }), 452), h = 40 + W.length * lh + 2 * lh + 10, y = 264 - h / 2;
     UI.frame(ctx, 110, y, 500, h); ctx.fillStyle = UI.textColor(); W.forEach((l, i) => ctx.fillText(l, 134, y + 20 + UI.sizes.menu + i * lh)); // v0.4.5 bigger text
-    ["Yes", "No"].forEach((o, i) => ctx.fillText((i === c.choice ? "> " : "  ") + o, 150, y + 30 + UI.sizes.menu + (W.length + i) * lh)); }
+    ["Yes", "No"].forEach((o, i) => UI.item(ctx, o, 150, y + 30 + UI.sizes.menu + (W.length + i) * lh, i === c.choice, 120)); }
   render(ctx) {
     if (this.pack) return this.pack.render(ctx);
     const F = PauseMenu.FRAME; // v0.4.5: wider frame for the bigger menu text
@@ -158,10 +158,14 @@ class PauseMenu {
     if (this.confirm) { const v = this.view; (v === "binder" ? this.renderBinder(ctx) : UI.frame(ctx, F.x, F.y, F.w, F.h)); return this.renderConfirm(ctx); }
     if (this.view === "binder") return this.renderBinder(ctx);
     if (this.view === "shop") return this.renderShop(ctx);
-    UI.frame(ctx, F.x, F.y, F.w, F.h); ctx.fillStyle = UI.textColor(); ctx.font = UI.font("menu"); const lh = UI.sizes.menu + 12, x0 = F.x + 24, yb = F.y + F.h - 26;
-    if (this.view === "root") { this.options.forEach((o, i) => ctx.fillText((i === this.idx ? "> " : "  ") + this.optionLabel(o), x0, F.y + 20 + UI.sizes.menu + i * lh)); ctx.fillText(T("coins", { n: this.game.inventory.money }), x0, yb); }
-    else if (this.view === "bag") { const l = this.game.inventory.list(); ctx.fillText(T("coins", { n: this.game.inventory.money }), x0, F.y + 20 + UI.sizes.menu); l.forEach((it, i) => ctx.fillText((i === this.sel ? "> " : "  ") + it.name + " x" + it.n, x0, F.y + 20 + UI.sizes.menu + (i + 1) * lh)); if (l.some(it => /^pack_/.test(it.id))) { ctx.font = UI.font("small"); ctx.fillText("Z on a pack: open it", x0, yb); } }
-    else UI.wrap(ctx, this.msg || "", F.w - 48).forEach((l, i) => ctx.fillText(l, x0, F.y + 20 + UI.sizes.menu + i * lh));
+    const bl = UI.blipIn(ctx, "pause", F.x + F.w / 2, F.y + F.h / 2); // v0.4.5.1 open blip (render-only)
+    UI.frame(ctx, F.x, F.y, F.w, F.h); const hd = UI.header(ctx, F.x + 6, F.y + 6, F.w - 12, this.view === "bag" ? "BAG // INV" : "MENU // SYS") ? 18 : 0, top = F.y + hd;
+    ctx.fillStyle = UI.textColor(); ctx.font = UI.font("menu"); const lh = UI.sizes.menu + 12, x0 = F.x + 24, yb = F.y + F.h - 26, rw = F.w - 32;
+    const coins = y => { const f = ctx.fillStyle; ctx.fillStyle = UI.accent(); ctx.fillText(T("coins", { n: this.game.inventory.money }), x0, y); ctx.fillStyle = f; };
+    if (this.view === "root") { this.options.forEach((o, i) => UI.item(ctx, this.optionLabel(o), x0, top + 20 + UI.sizes.menu + i * lh, i === this.idx, rw)); coins(yb); }
+    else if (this.view === "bag") { const l = this.game.inventory.list(); coins(top + 20 + UI.sizes.menu); l.forEach((it, i) => UI.item(ctx, it.name + " x" + it.n, x0, top + 20 + UI.sizes.menu + (i + 1) * lh, i === this.sel, rw)); if (l.some(it => /^pack_/.test(it.id))) { ctx.font = UI.font("small"); ctx.fillText("Z on a pack: open it", x0, yb); } }
+    else UI.wrap(ctx, this.msg || "", F.w - 48).forEach((l, i) => ctx.fillText(l, x0, top + 20 + UI.sizes.menu + i * lh));
+    if (bl) ctx.restore();
   }
 }
 Object.assign(window, { PauseMenu, CardDraw });

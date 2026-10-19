@@ -179,9 +179,9 @@ class Game {
     if (this.notice) { const N = UI.wrap(ctx, this.notice, 636); UI.frame(ctx, 20, 20, 680, 40 + N.length * lh); ctx.fillStyle = UI.textColor(); N.forEach((l, i) => ctx.fillText(l, 44, 20 + 20 + UI.sizes.dialog + i * lh)); return; }
     const L = GAME_DATA.momIntro[Math.min(this.introIdx, GAME_DATA.momIntro.length - 1)], WL = UI.wrap(ctx, "\"" + L.line + "\"", 636), h = 72 + WL.length * lh;
     UI.frame(ctx, 20, 20, 680, h); ctx.fillStyle = UI.textColor();
-    ctx.font = UI.font("dialog", true); ctx.fillText(L.who, 44, 56);
+    ctx.font = UI.font("dialog", true); ctx.fillStyle = UI.accent(); ctx.fillText(L.who, 44, 56); ctx.fillStyle = UI.textColor();
     ctx.font = UI.font("dialog"); WL.forEach((l, i) => ctx.fillText(l, 44, 56 + lh + 4 + i * lh));
-    ctx.font = UI.font("arrow"); ctx.fillText("▶", 668, 20 + h - 14); // v0.4.3: arrow only (Z still advances)
+    UI.arrow(ctx, 668, 20 + h - 14); // v0.4.3: arrow only (Z still advances)
   }
   renderWorld(ctx) {
     const camX = Math.max(0, Math.min(this.player.px + TILE / 2 - this.canvas.width / 2, this.map.width * TILE - this.canvas.width));

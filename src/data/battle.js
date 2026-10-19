@@ -80,7 +80,7 @@ GAME_DATA.pb = {
   barkPrefix: { hypewick: "hypewick", influencorn: "influencorn", crypto_grumblet: "grumblet", doomscroll_slug: "slug", gym_bro_goose: "goose",
     vapebat: "vapebat", hustle_hamster: "hustle_hamster", thirst_trout: "thirst_trout", mukbang_mole: "mukbang_mole", copypasta_cat: "copypasta_cat", reply_guy_rat: "reply_guy_rat", filter_frog: "filter_frog", burner_beetle: "burner_beetle", streak_snail: "streak_snail", merch_moth: "merch_moth", podcast_parrot: "podcast_parrot", prankster_possum: "prankster_possum", reaction_raccoon: "reaction_raccoon", lo_fi_lizard: "lo_fi_lizard", guru_gecko: "guru_gecko", cancel_crow: "cancel_crow", pump_pug: "pump_pug", hype_hydra: "hype_hydra", clout_kraken: "clout_kraken", final_boss_boomer: "final_boss_boomer" }, // v0.4.3 batch 2: prefix = id
   // Layout (decided): floor y330-446, party x40-300, enemies x400-690, command bar y446-528.
-  layout: { frontLabelW: 78, party: { x0: 40, x1: 300, feet: 430, size: 96 }, enemies: { x0: 400, x1: 690 }, front: { feet: 430, size: 96 }, back: { feet: 340, size: 48, xs: [496, 594], labelW: 92, minFont: 9 }, bossSize: 144, // v0.4.1 back row: HP bars ~y278
+  layout: { frontLabelW: 78, frontMinFont: 10, party: { x0: 40, x1: 300, feet: 430, size: 96 }, enemies: { x0: 400, x1: 690 }, front: { feet: 430, size: 96 }, back: { feet: 340, size: 48, xs: [496, 594], labelW: 92, minFont: 9 }, bossSize: 144, // v0.4.1 back row: HP bars ~y278
             bar: { y: 446, h: 82 }, commands: ["Attack", "Special", "Item", "Swap", "Run"] },
   bgs: { drop_day: B2 + "battle/bg_drop_day_720x528.png", stream_room: B2 + "battle/bg_stream_room_720x528.png" },
   shadows: { 96: B2 + "battle/shadow_96x24.png", 48: B2 + "battle/shadow_48x16.png" },

@@ -84,7 +84,7 @@ class PackOpenScreen {
     if (this.phase === "another") {
       UI.frame(ctx, 60, 180, 600, 150); ctx.fillStyle = UI.textColor(); ctx.font = "16px monospace";
       UI.wrap(ctx, T("packOpenAnother"), 540).forEach((l, i) => ctx.fillText(l, 90, 220 + i * 22));
-      ["Yes", "No"].forEach((o, i) => ctx.fillText((i === this.choice ? "> " : "  ") + o + (i === 0 ? " (" + this.game.inventory.packs[this.tier] + " left)" : ""), 90 + i * 220, 300));
+      ["Yes", "No"].forEach((o, i) => UI.item(ctx, o + (i === 0 ? " (" + this.game.inventory.packs[this.tier] + " left)" : ""), 90 + i * 220, 300, i === this.choice));
       return;
     }
     if (this.phase === "summary") {

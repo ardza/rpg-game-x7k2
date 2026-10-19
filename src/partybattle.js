@@ -294,7 +294,7 @@ class PartyBattle {
     ctx.fillStyle = "#1a1423"; ctx.font = UI.font(s >= 96 ? "label" : "labelSmall", true); // v0.4.5 bigger labels
     const back = p.row === "back", maxW = back ? PB().layout.back.labelW : PB().layout.frontLabelW; // v0.4.5: front labels capped so neighbours (82px apart) never overlap // v0.4.1: back row = name only, shrink font to fit
     const nm0 = u.short || u.name; let label = back ? nm0 : nm0 + " L" + u.level, nm = nm0; /* v0.4.5.1 short battle labels (story/short_names.md) */ const fits = t => !ctx.measureText || !ctx.measureText(t) || ctx.measureText(t).width <= maxW || ctx.measureText(t).width === undefined;
-    if (back) for (let fs = UI.sizes.labelSmall; !fits(label) && fs >= PB().layout.back.minFont; fs--) ctx.font = "bold " + fs + "px monospace";
+    { const f0 = back ? UI.sizes.labelSmall : UI.sizes[s >= 96 ? "label" : "labelSmall"], fmin = back ? PB().layout.back.minFont : PB().layout.frontMinFont || 10; for (let fs = f0; !fits(label) && fs > fmin; fs--) ctx.font = "bold " + (fs - 1) + "px monospace"; } // v0.4.5.1: front labels shrink (to 10px) before trimming, so L10+ keeps 8-letter names
     while (!fits(label) && nm.length > 3) { nm = nm.slice(0, -1).trimEnd(); label = back ? nm + "." : nm + ". L" + u.level; }
     p.label = label; p.labelFont = ctx.font; const lw = (ctx.measureText && ctx.measureText(label) && ctx.measureText(label).width) || label.length * 6; ctx.fillStyle = "rgba(246,241,228,0.9)"; const lx = back ? p.x - lw / 2 : p.x - bw / 2, lh = parseInt(ctx.font.replace(/^bold /, "")) + 3; ctx.fillRect(lx - 2, by - lh - 2, lw + 4, lh); ctx.fillStyle = "#1a1423"; ctx.fillText(label, lx, by - 5);
     const S = PB().status, tags = Object.keys(u.st).filter(k => S[k]).map(k => S[k].tag).concat(u.pendingSkip ? ["CRG"] : [], u.numb > 0 ? ["NUMB"] : [], u.st.cheer ? ["CHR"] : [], u.st.guard ? ["GRD"] : []);
@@ -309,22 +309,22 @@ class PartyBattle {
       if (img) { ctx.save(); ctx.imageSmoothingEnabled = false; ctx.translate(690, 0); ctx.scale(-1, 1); ctx.drawImage(img, 0, 236, 96, 96); ctx.restore(); } else { ctx.fillStyle = "#3fa34d"; ctx.fillRect(610, 250, 64, 82); } }
     this.party.forEach((u, i) => this.drawUnit(ctx, u, lay.party[i], false));
     if (this.phase === "target") { const L = this.targetList(), t = L[this.tsel]; if (t) { const all = this.party.concat(this.enemies), lp = this.party.includes(t) ? lay.party[this.party.indexOf(t)] : this.enemies.includes(t) ? lay.enemies[this.enemies.indexOf(t)] : null;
-      if (!lp) { const lh = UI.sizes.menu + 8; UI.frame(ctx, 250, 436 - 28 - L.length * lh, 340, 28 + L.length * lh); ctx.fillStyle = UI.textColor(); ctx.font = UI.font("menu"); L.forEach((b, i) => ctx.fillText((i === this.tsel ? "> " : "  ") + b.name + " " + b.hp + "/" + b.maxHp, 266, 436 - 14 - (L.length - 1 - i) * lh - 6)); } else {
+      if (!lp) { const lh = UI.sizes.menu + 8; UI.frame(ctx, 250, 436 - 28 - L.length * lh, 340, 28 + L.length * lh); ctx.fillStyle = UI.textColor(); ctx.font = UI.font("menu"); L.forEach((b, i) => UI.item(ctx, b.name + " " + b.hp + "/" + b.maxHp, 266, 436 - 14 - (L.length - 1 - i) * lh - 6, i === this.tsel, 312)); } else {
       ctx.fillStyle = "#ffd400"; ctx.beginPath(); ctx.moveTo(lp.x - 8, lp.feet - lp.size - 34); ctx.lineTo(lp.x + 8, lp.feet - lp.size - 34); ctx.lineTo(lp.x, lp.feet - lp.size - 22); ctx.fill(); } } }
     if (this.phase === "press") { const P = PB().press, k = (this.wide ? P.wideMult : 1) * (this.easy ? P.easy.mult : 1), d = this.t - this.cue, on = Math.abs(d) <= P.good * k;
       UI.frame(ctx, 20, 12, 680, 64); ctx.fillStyle = UI.textColor(); ctx.font = UI.font("battle"); ctx.fillText(T(this.pressKind === "block" ? "pbPressBlock" : "pbPressAttack"), 40, 52);
       ctx.fillStyle = on ? "#ffd400" : "rgba(255,255,255,0.6)"; ctx.font = "bold 40px monospace"; ctx.fillText(d < -P.good * k ? "..." : "Z!", 330, 200);
       if (window.Debug && Debug.open) { ctx.font = "12px monospace"; ctx.fillText("cue " + this.cue + "ms t " + Math.round(this.t), 300, 320); } }
     // command bar y446-528
-    ctx.fillStyle = "#1a1423"; ctx.fillRect(0, Lo.bar.y, 720, Lo.bar.h); ctx.fillStyle = "#f6f1e4"; ctx.font = UI.font("barSmall");
+    const HO = UI.holo(), Hc = UI.H; ctx.fillStyle = HO ? Hc.glass : "#1a1423"; ctx.fillRect(0, Lo.bar.y, 720, Lo.bar.h); if (HO) { UI.scan(ctx, 0, Lo.bar.y, 720, Lo.bar.h); ctx.fillStyle = Hc.accent; ctx.fillRect(0, Lo.bar.y, 720, 2); } ctx.fillStyle = HO ? Hc.text : "#f6f1e4"; ctx.font = UI.font("barSmall");
     const u = this.actor; ctx.fillText((u && u.side === "party" && this.phase !== "msg" ? u.name : "") + "  STA " + this.stamina + "/" + PB().stamina.cap + "  Potions " + (this.game.inventory.items.potion || 0), 20, Lo.bar.y + 26); ctx.font = UI.font("menu", true);
-    Lo.commands.forEach((c, i) => { const x = 20 + i * 140, sel = this.phase === "command" && i === this.cmd; if (sel) { ctx.fillStyle = "#ffd400"; ctx.fillRect(x - 6, Lo.bar.y + 36, UI.textW(ctx, c) + 12, 32); }
-      ctx.fillStyle = sel ? "#1a1423" : (this.phase === "command" ? "#f6f1e4" : "#8a7a9a"); ctx.fillText(c, x, Lo.bar.y + 60); });
-    if (this.phase === "sub") { const lh = UI.sizes.menu + 10; UI.frame(ctx, 150, 436 - 30 - 2 * lh, 300, 30 + 2 * lh); ctx.fillStyle = UI.textColor(); ctx.font = UI.font("menu"); this.specialMoves(u).forEach((m, i) => ctx.fillText((i === this.sub ? "> " : "  ") + PB().moves[m].name, 168, 436 - 22 - (1 - i) * lh)); }
+    Lo.commands.forEach((c, i) => { const x = 20 + i * 140, sel = this.phase === "command" && i === this.cmd; if (sel) { ctx.fillStyle = HO ? Hc.bar : "#ffd400"; ctx.fillRect(x - 6, Lo.bar.y + 36, UI.textW(ctx, c) + 12, 32); if (HO) { ctx.fillStyle = Hc.accent; ctx.fillRect(x - 6, Lo.bar.y + 36, 3, 32); } }
+      ctx.fillStyle = HO ? (sel ? Hc.text : this.phase === "command" ? Hc.muted : "#3d5670") : sel ? "#1a1423" : (this.phase === "command" ? "#f6f1e4" : "#8a7a9a"); ctx.fillText(c, x, Lo.bar.y + 60); });
+    if (this.phase === "sub") { const lh = UI.sizes.menu + 10; UI.frame(ctx, 150, 436 - 30 - 2 * lh, 300, 30 + 2 * lh); ctx.fillStyle = UI.textColor(); ctx.font = UI.font("menu"); this.specialMoves(u).forEach((m, i) => UI.item(ctx, PB().moves[m].name, 168, 436 - 22 - (1 - i) * lh, i === this.sub, 272)); }
     // v0.4.5 message box: bigger text, up to 3 lines, arrow when Z/tap will advance (it never advances on its own)
     if (this.msgs.length) { ctx.font = UI.font("battle"); const L = UI.wrap(ctx, this.msgs[0], 636).slice(0, 3), lh = UI.sizes.battle + 7, h = 30 + L.length * lh;
       UI.frame(ctx, 20, 12, 680, h); ctx.fillStyle = UI.textColor(); L.forEach((l, i) => ctx.fillText(l, 40, 12 + 14 + UI.sizes.battle + i * lh));
-      if (this.msgReady() && Math.floor(this.anim / 400) % 2 === 0) { ctx.font = UI.font("arrow"); ctx.fillText("▶", 672, 12 + h - 12); } }
+      if (this.msgReady() && Math.floor(this.anim / 400) % 2 === 0) UI.arrow(ctx, 672, 12 + h - 12); }
   }
 }
 Object.assign(window, { PartyBattle, PBF });
