@@ -1,0 +1,448 @@
+{
+ "frame_w": 192,
+ "frame_h": 224,
+ "note": "Pack centered at (96,112). Reveal shows card BACK as placeholder at scale; on last reveal frame code draws the real card (120x168) at (36,28) over it. Holo variant adds sparkles (5% holo roll). reveal3 loops while waiting for tap.",
+ "sequences": {
+  "open_basic": {
+   "sheet": "open_basic_sheet.png",
+   "frames": [
+    {
+     "i": 0,
+     "name": "shake0",
+     "ms": 120
+    },
+    {
+     "i": 1,
+     "name": "shake1",
+     "ms": 120
+    },
+    {
+     "i": 2,
+     "name": "shake2",
+     "ms": 120
+    },
+    {
+     "i": 3,
+     "name": "shake3",
+     "ms": 280
+    },
+    {
+     "i": 4,
+     "name": "tear0",
+     "ms": 90
+    },
+    {
+     "i": 5,
+     "name": "tear1",
+     "ms": 90
+    },
+    {
+     "i": 6,
+     "name": "tear2",
+     "ms": 250
+    },
+    {
+     "i": 7,
+     "name": "burst0",
+     "ms": 70
+    },
+    {
+     "i": 8,
+     "name": "burst1",
+     "ms": 70
+    },
+    {
+     "i": 9,
+     "name": "burst2",
+     "ms": 70
+    }
+   ],
+   "loop_last": false,
+   "total_ms": 1280
+  },
+  "open_premium": {
+   "sheet": "open_premium_sheet.png",
+   "frames": [
+    {
+     "i": 0,
+     "name": "shake0",
+     "ms": 120
+    },
+    {
+     "i": 1,
+     "name": "shake1",
+     "ms": 120
+    },
+    {
+     "i": 2,
+     "name": "shake2",
+     "ms": 120
+    },
+    {
+     "i": 3,
+     "name": "shake3",
+     "ms": 280
+    },
+    {
+     "i": 4,
+     "name": "tear0",
+     "ms": 90
+    },
+    {
+     "i": 5,
+     "name": "tear1",
+     "ms": 90
+    },
+    {
+     "i": 6,
+     "name": "tear2",
+     "ms": 250
+    },
+    {
+     "i": 7,
+     "name": "burst0",
+     "ms": 70
+    },
+    {
+     "i": 8,
+     "name": "burst1",
+     "ms": 70
+    },
+    {
+     "i": 9,
+     "name": "burst2",
+     "ms": 70
+    }
+   ],
+   "loop_last": false,
+   "total_ms": 1280
+  },
+  "open_elite": {
+   "sheet": "open_elite_sheet.png",
+   "frames": [
+    {
+     "i": 0,
+     "name": "shake0",
+     "ms": 120
+    },
+    {
+     "i": 1,
+     "name": "shake1",
+     "ms": 120
+    },
+    {
+     "i": 2,
+     "name": "shake2",
+     "ms": 120
+    },
+    {
+     "i": 3,
+     "name": "shake3",
+     "ms": 280
+    },
+    {
+     "i": 4,
+     "name": "tear0",
+     "ms": 90
+    },
+    {
+     "i": 5,
+     "name": "tear1",
+     "ms": 90
+    },
+    {
+     "i": 6,
+     "name": "tear2",
+     "ms": 250
+    },
+    {
+     "i": 7,
+     "name": "burst0",
+     "ms": 70
+    },
+    {
+     "i": 8,
+     "name": "burst1",
+     "ms": 70
+    },
+    {
+     "i": 9,
+     "name": "burst2",
+     "ms": 70
+    }
+   ],
+   "loop_last": false,
+   "total_ms": 1280
+  },
+  "reveal_common": {
+   "sheet": "reveal_common_sheet.png",
+   "frames": [
+    {
+     "i": 0,
+     "name": "reveal0",
+     "ms": 140
+    },
+    {
+     "i": 1,
+     "name": "reveal1",
+     "ms": 140
+    },
+    {
+     "i": 2,
+     "name": "reveal2",
+     "ms": 140
+    },
+    {
+     "i": 3,
+     "name": "reveal3",
+     "ms": 140
+    }
+   ],
+   "loop_last": true,
+   "total_ms": 560
+  },
+  "reveal_common_holo": {
+   "sheet": "reveal_common_holo_sheet.png",
+   "frames": [
+    {
+     "i": 0,
+     "name": "reveal0",
+     "ms": 140
+    },
+    {
+     "i": 1,
+     "name": "reveal1",
+     "ms": 140
+    },
+    {
+     "i": 2,
+     "name": "reveal2",
+     "ms": 140
+    },
+    {
+     "i": 3,
+     "name": "reveal3",
+     "ms": 140
+    }
+   ],
+   "loop_last": true,
+   "total_ms": 560
+  },
+  "reveal_uncommon": {
+   "sheet": "reveal_uncommon_sheet.png",
+   "frames": [
+    {
+     "i": 0,
+     "name": "reveal0",
+     "ms": 140
+    },
+    {
+     "i": 1,
+     "name": "reveal1",
+     "ms": 140
+    },
+    {
+     "i": 2,
+     "name": "reveal2",
+     "ms": 140
+    },
+    {
+     "i": 3,
+     "name": "reveal3",
+     "ms": 140
+    }
+   ],
+   "loop_last": true,
+   "total_ms": 560
+  },
+  "reveal_uncommon_holo": {
+   "sheet": "reveal_uncommon_holo_sheet.png",
+   "frames": [
+    {
+     "i": 0,
+     "name": "reveal0",
+     "ms": 140
+    },
+    {
+     "i": 1,
+     "name": "reveal1",
+     "ms": 140
+    },
+    {
+     "i": 2,
+     "name": "reveal2",
+     "ms": 140
+    },
+    {
+     "i": 3,
+     "name": "reveal3",
+     "ms": 140
+    }
+   ],
+   "loop_last": true,
+   "total_ms": 560
+  },
+  "reveal_rare": {
+   "sheet": "reveal_rare_sheet.png",
+   "frames": [
+    {
+     "i": 0,
+     "name": "reveal0",
+     "ms": 140
+    },
+    {
+     "i": 1,
+     "name": "reveal1",
+     "ms": 140
+    },
+    {
+     "i": 2,
+     "name": "reveal2",
+     "ms": 140
+    },
+    {
+     "i": 3,
+     "name": "reveal3",
+     "ms": 140
+    }
+   ],
+   "loop_last": true,
+   "total_ms": 560
+  },
+  "reveal_rare_holo": {
+   "sheet": "reveal_rare_holo_sheet.png",
+   "frames": [
+    {
+     "i": 0,
+     "name": "reveal0",
+     "ms": 140
+    },
+    {
+     "i": 1,
+     "name": "reveal1",
+     "ms": 140
+    },
+    {
+     "i": 2,
+     "name": "reveal2",
+     "ms": 140
+    },
+    {
+     "i": 3,
+     "name": "reveal3",
+     "ms": 140
+    }
+   ],
+   "loop_last": true,
+   "total_ms": 560
+  },
+  "reveal_epic": {
+   "sheet": "reveal_epic_sheet.png",
+   "frames": [
+    {
+     "i": 0,
+     "name": "reveal0",
+     "ms": 140
+    },
+    {
+     "i": 1,
+     "name": "reveal1",
+     "ms": 140
+    },
+    {
+     "i": 2,
+     "name": "reveal2",
+     "ms": 140
+    },
+    {
+     "i": 3,
+     "name": "reveal3",
+     "ms": 140
+    }
+   ],
+   "loop_last": true,
+   "total_ms": 560
+  },
+  "reveal_epic_holo": {
+   "sheet": "reveal_epic_holo_sheet.png",
+   "frames": [
+    {
+     "i": 0,
+     "name": "reveal0",
+     "ms": 140
+    },
+    {
+     "i": 1,
+     "name": "reveal1",
+     "ms": 140
+    },
+    {
+     "i": 2,
+     "name": "reveal2",
+     "ms": 140
+    },
+    {
+     "i": 3,
+     "name": "reveal3",
+     "ms": 140
+    }
+   ],
+   "loop_last": true,
+   "total_ms": 560
+  },
+  "reveal_legendary": {
+   "sheet": "reveal_legendary_sheet.png",
+   "frames": [
+    {
+     "i": 0,
+     "name": "reveal0",
+     "ms": 140
+    },
+    {
+     "i": 1,
+     "name": "reveal1",
+     "ms": 140
+    },
+    {
+     "i": 2,
+     "name": "reveal2",
+     "ms": 140
+    },
+    {
+     "i": 3,
+     "name": "reveal3",
+     "ms": 140
+    }
+   ],
+   "loop_last": true,
+   "total_ms": 560
+  },
+  "reveal_legendary_holo": {
+   "sheet": "reveal_legendary_holo_sheet.png",
+   "frames": [
+    {
+     "i": 0,
+     "name": "reveal0",
+     "ms": 140
+    },
+    {
+     "i": 1,
+     "name": "reveal1",
+     "ms": 140
+    },
+    {
+     "i": 2,
+     "name": "reveal2",
+     "ms": 140
+    },
+    {
+     "i": 3,
+     "name": "reveal3",
+     "ms": 140
+    }
+   ],
+   "loop_last": true,
+   "total_ms": 560
+  }
+ }
+}
