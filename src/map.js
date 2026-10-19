@@ -14,7 +14,7 @@ const TileSet = {
 class TileMap {
   constructor(def) {
     this.def = def; this.width = def.width; this.height = def.height;
-    this.grid = def.room ? def.tiles.map(r => r.slice()) : def.rows.map(r => r.split("").map(Number)); // rooms: cell ids into interior_48.png
+    this.grid = def.room ? def.tiles.map(r => r.slice()) : def.rows.map(r => r.split("").map(c => /\d/.test(c) ? Number(c) : c)) /* v0.4.4: letters = new tile ids */; // rooms: cell ids into interior_48.png
     this.blocked = new Set((def.decor || []).filter(d => d.solid).map(d => d.x + "," + d.y));
     if (this.grid.length !== this.height || this.grid.some(r => r.length !== this.width)) throw new Error("Map size mismatch: " + def.name);
   }

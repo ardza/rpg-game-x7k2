@@ -52,8 +52,9 @@ class PartyBattle {
     const deck = this.deckEntries();
     this.cards = deck.map(e => { const c = GAME_DATA.cards[e.cardId]; return PBF.makeUnit("party", { id: e.uid, uid: e.uid, cardId: e.cardId, art: e.cardId, name: c.name, type: c.type, base: c.base, level: e.level, holo: e.holo, moves: c.moves, rarity: c.rarity }); });
     this.active = this.cards.slice(0, PB().activeCards); this.bench = this.cards.slice(PB().activeCards);
-    this.enemies = G.members.map(([id, L], i) => { const E = GAME_DATA.enemies[id]; return PBF.makeUnit("enemy", { id: id + "_" + i, eid: id, art: id, name: E.name, type: E.type, base: E.base, level: L, moves: E.moves, ai: E.ai, boss: !!E.boss, hp: E.hp, hpMult: E.hpMult, def0: E }); });
-    const lines = [T("pbStart", { n: this.enemies.length > 1 ? this.enemies[0].name + " & co." : this.enemies[0].name })];
+    this.enemies = G.members.map(([id, L], i) => { const E = GAME_DATA.enemies[id]; return PBF.makeUnit("enemy", { id: id + "_" + i, eid: id, art: E.cardArt || id, name: E.name, type: E.type, base: E.base, level: L, moves: E.moves, ai: E.ai, boss: !!E.boss, hp: E.hp, hpMult: E.hpMult, def0: E }); });
+    this.trainer = G.trainer || null;
+    const lines = (opts.pre || []).concat([T("pbStart", { n: this.enemies.length > 1 ? this.enemies[0].name + " & co." : this.enemies[0].name })]);
     for (const e of this.enemies.filter((e, i, a) => a.findIndex(x => x.eid === e.eid) === i)) if (e.def0.barks && e.def0.barks.enter) lines.push(...TL(e.def0.barks.enter));
     for (const c of this.active) lines.push(T(PB().barkPrefix[c.cardId] + "_enter"));
     this.say(lines, () => this.startRound());
@@ -104,7 +105,7 @@ class PartyBattle {
     if (this.done || this.phase === "end") return true;
     if (!this.alive(this.enemies).length) { this.win(); return true; }
     const cardsLeft = this.alive(this.cards).length;
-    if (this.player.hp <= 0 || (this.cards.length && !cardsLeft)) { this.finish("lose", [T("pbLose")]); return true; }
+    if (this.player.hp <= 0 || (this.cards.length && !cardsLeft)) { const L = [T("pbLose")]; if (this.trainer) { L.push(T(this.trainer.loseLine)); this.game.flags[this.trainer.id + "Lost"] = true; } this.finish("lose", L); return true; }
     return false;
   }
   // --- party commands: Attack / Special / Item / Run
@@ -131,6 +132,7 @@ class PartyBattle {
     const ai = this.active.indexOf(u), bi = this.bench.indexOf(nb); this.active[ai] = nb; this.bench[bi] = u; nb.swappedIn = this.round;
     this.say([T("pbSwap", { out: u.name, in: nb.name }), T(PB().barkPrefix[nb.cardId] + "_enter")], () => this.endTurn(u)); }
   tryRun() {
+    if (this.trainer) return this.say([T(this.trainer.noRun)], () => { this.phase = "command"; }); // v0.4.4 trainer fights: no running
     if (this.boss) return this.say([T(this.enemies[0].def0.noRun || "pbRunFail")], () => { this.phase = "command"; });
     if (Formulas.rand() < PB().runChance) return this.finish("run", [T("pbRun")]);
     this.say([T("pbRunFail")], () => this.endTurn(this.actor));
@@ -157,12 +159,13 @@ class PartyBattle {
     const foes = this.alive(this.party), M = PB().moves, pre = [];
     const lowest = () => foes.reduce((a, b) => a.hp / a.maxHp <= b.hp / b.maxHp ? a : b), rnd = () => foes[Math.floor(Formulas.rand() * foes.length)];
     let mid, tg;
-    if (u.ai === "ricky") { mid = foes.some(x => x.pendingSkip || x.numb > 0) ? "selfie_jab" : "ring_light_flash"; tg = lowest(); }
+    if (u.ai === "card") { mid = u.moves[Formulas.rand() < 0.5 ? 0 : 1]; tg = rnd(); } // v0.4.4 trainer cards: 50/50 basic/special
+    else if (u.ai === "ricky") { mid = foes.some(x => x.pendingSkip || x.numb > 0) ? "selfie_jab" : "ring_light_flash"; tg = lowest(); }
     else if (u.ai === "unboxer") { mid = Formulas.rand() < 0.5 ? "box_cutter" : "peanut_barrage"; tg = this.player.hp > 0 && this.player.hp < this.player.maxHp / 2 ? this.player : rnd(); }
     else { const low = u.hp < u.maxHp / 2; if (low && !u.saidLow) { u.saidLow = true; pre.push(T(u.def0.lowHp)); }
       if (this.round % 3 === 0) mid = "chat_spam"; else if (low) { mid = Formulas.rand() < 0.75 ? "hot_take" : "donation_goal"; } else mid = Formulas.rand() < 0.35 ? "donation_goal" : "hot_take";
       tg = low && mid === "hot_take" ? foes.reduce((a, b) => a.hp <= b.hp ? a : b) : rnd(); }
-    let targets = M[mid].all ? foes : [tg];
+    let targets = M[mid].all ? foes : M[mid].hits ? Array.from({ length: M[mid].hits }, rnd) : [tg];
     if (u.st.brainrot && !M[mid].all && Formulas.rand() < PB().status.brainrot.wrongTarget) { const own = this.alive(this.enemies); targets = [own[Math.floor(Formulas.rand() * own.length)]]; pre.push(T("pbWrong", { user: u.name, target: targets[0].name })); }
     const go = () => targets[0].side === "party" ? this.beginPress("block", { user: u, move: mid, targets }) : this.resolve({ user: u, move: mid, targets }, null);
     if (pre.length) return this.say(pre, go); go();
@@ -210,7 +213,8 @@ class PartyBattle {
   // --- end of fight
   rewards() { const C = PB().coins; let coins = this.enemies.reduce((s, e) => s + C.flat + C.perLevel * e.level, 0);
     if (this.boss) coins *= C.boss; if (this.presses.length && this.presses.every(p => p !== "miss")) coins *= C.allGood;
-    const xp = this.enemies.reduce((s, e) => s + Formulas.xpGain(e.def0.baseXP, e.level), 0); return { coins: Math.floor(coins), xp }; }
+    const xp = this.enemies.reduce((s, e) => s + Formulas.xpGain(e.def0.baseXP, e.level), 0); if (this.trainer && this.trainer.coins != null) coins = this.trainer.coins; // v0.4.4 trainer flat payout (Thorne 30)
+    return { coins: Math.floor(coins), xp }; }
   win() {
     const g = this.game, r = this.rewards(), lines = [T("pbWin", { coins: r.coins, xp: r.xp })];
     g.inventory.addMoney(r.coins);
@@ -218,7 +222,8 @@ class PartyBattle {
     lvl(this.player.name, g.stats, r.xp, Formulas.LEVEL_CAP);
     for (const c of this.cards) { const e = g.collection.list.find(x => x.uid === c.uid); if (!e || c.hp <= 0) continue; // KO'd: 0
       lvl(c.name, e, Math.floor(r.xp * (this.active.includes(c) ? 1 : PB().benchXp)), Formulas.LEVEL_CAP); }
-    if (!g.defeatedGroups.includes(this.groupId)) g.defeatedGroups.push(this.groupId);
+    if (!this.group.wild && !g.defeatedGroups.includes(this.groupId)) g.defeatedGroups.push(this.groupId);
+    if (this.trainer) { lines.push(T(this.trainer.winLine)); g.flags[this.trainer.id + "Beaten"] = true; }
     for (const e of this.enemies) if (e.def0.drop) { g.inventory.addPack(e.def0.drop.pack, e.def0.drop.n); lines.push(T("pbDrop", { pack: GAME_DATA.packs[e.def0.drop.pack].name })); }
     this.reward = r; this.finish("win", lines);
   }
@@ -284,6 +289,8 @@ class PartyBattle {
     const lay = PartyBattle.layout(this.party.length, this.enemies.length); this.lastLayout = lay;
     this.enemies.forEach((u, i) => { const p = lay.enemies[i]; if (u.boss && p.row === "front" && Sprites.get("ft_" + u.art + "_" + Lo.bossSize + "_0")) p.size = Lo.bossSize; }); // 144px boss art
     lay.enemies.map((p, i) => [p, this.enemies[i]]).sort((a, b) => (a[0].row === "back" ? 0 : 1) - (b[0].row === "back" ? 0 : 1)).forEach(([p, u]) => this.drawUnit(ctx, u, p, true));
+    if (this.trainer) { const k = "ft_" + this.trainer.art + "_96_" + Math.floor((this.anim || 0) / PB().frameMs) % 3, img = Sprites.get(k); // trainer stands behind his cards (not a fighter)
+      if (img) { ctx.save(); ctx.imageSmoothingEnabled = false; ctx.translate(690, 0); ctx.scale(-1, 1); ctx.drawImage(img, 0, 236, 96, 96); ctx.restore(); } else { ctx.fillStyle = "#3fa34d"; ctx.fillRect(610, 250, 64, 82); } }
     this.party.forEach((u, i) => this.drawUnit(ctx, u, lay.party[i], false));
     if (this.phase === "target") { const L = this.targetList(), t = L[this.tsel]; if (t) { const all = this.party.concat(this.enemies), lp = this.party.includes(t) ? lay.party[this.party.indexOf(t)] : this.enemies.includes(t) ? lay.enemies[this.enemies.indexOf(t)] : null;
       if (!lp) { UI.frame(ctx, 300, 330, 240, 24 + L.length * 22); ctx.fillStyle = UI.textColor(); ctx.font = "15px monospace"; L.forEach((b, i) => ctx.fillText((i === this.tsel ? "> " : "  ") + b.name + " " + b.hp + "/" + b.maxHp, 314, 350 + i * 22)); } else {

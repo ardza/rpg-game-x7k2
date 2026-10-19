@@ -193,6 +193,7 @@ Object.assign(GAME_DATA.text, {
   foundInfluencorn: "Influencorn was hiding in the wall. Best lighting in town, apparently.", // [writer] per-spot line
   npcRicky:     "Don't walk in my shot! ...Okay, you can be in it. For exposure.",  // [writer] Overworld v0.3.1
   npcUnboxer:   "I opened 300 packs today. My mom thinks I'm at school.",          // [writer] Overworld v0.3.1
+  resetConfirm: "Erase your save and start over?",                                  // v0.4.4 Director (Reset Game)
   npcMom1:      "Did you touch grass yet? I can tell when you're lying.",            // [writer] battle_text.md npc_mom
   npcMom2:      "If you open a pack in the house, open a window. The hype smells.",  // [writer] npc_mom
   npcMom3:      "No, I won't watch your unboxing. I've seen your dad's.",           // [writer] npc_mom

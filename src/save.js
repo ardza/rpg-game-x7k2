@@ -1,6 +1,6 @@
 // localStorage save, schema version 4 (DESIGN v0.4 §13). v1–v3 saves are not migrated: they are discarded
 // (removed) and the game starts fresh with a notice. Corrupt JSON or a wrong shape is treated the same way.
-const SAVE_KEY = "skyreach_save", SAVE_VERSION = 4, LEGACY_SAVE_KEYS = ["wildbound_save_v1"];
+const SAVE_KEY = "skyreach_save", SAVE_VERSION = 5, LEGACY_SAVE_KEYS = ["wildbound_save_v1"];
 const Save = {
   discarded: false, // true after load() threw away an old/corrupt save
   storage() { try { return window.localStorage; } catch (e) { return null; } },
@@ -12,13 +12,15 @@ const Save = {
       collection: game.collection.list.map(e => Object.assign({}, e)), deck: game.deck.slice(), active: game.active.slice(),
       packsOpened: Object.assign({}, game.packsOpened), pityCounter: game.pityCounter, commonsTradedIn: game.commonsTradedIn, packsTradedIn: game.packsTradedIn | 0,
       hiddenFound: game.hiddenFound.slice(), defeatedGroups: game.defeatedGroups.slice(),
-      flags: Object.assign({}, game.flags), settings: Object.assign({}, game.settings) };
+      flags: Object.assign({}, game.flags), settings: Object.assign({}, game.settings),
+      playMs: Math.floor(game.playMs || 0), coinsFound: (game.coinsFound || []).slice(), jobs: Object.assign({}, game.jobs) }; // v5 (v0.4.4)
   },
   valid(d) {
     const num = v => typeof v === "number" && isFinite(v) && v >= 0;
     return !!d && typeof d === "object" && d.version === SAVE_VERSION && d.player && d.player.pos && typeof d.player.pos.map === "string" &&
       Number.isInteger(d.player.pos.x) && Number.isInteger(d.player.pos.y) && num(d.money) && d.bag && typeof d.bag.packs === "object" &&
-      Array.isArray(d.collection) && Array.isArray(d.hiddenFound) && d.flags && typeof d.flags === "object";
+      Array.isArray(d.collection) && Array.isArray(d.hiddenFound) && d.flags && typeof d.flags === "object" &&
+      num(d.playMs) && Array.isArray(d.coinsFound) && !!d.jobs && typeof d.jobs === "object";
   },
   save(game) {
     const s = this.storage(); if (!s) return false;
@@ -29,9 +31,19 @@ const Save = {
     for (const k of LEGACY_SAVE_KEYS) if (s.getItem(k) != null) { s.removeItem(k); this.discarded = true; }
     const raw = s.getItem(SAVE_KEY); if (raw == null) return null;
     let d = null; try { d = JSON.parse(raw); } catch (e) { d = null; }
+    d = this.migrate(d);
     if (!this.valid(d)) { s.removeItem(SAVE_KEY); this.discarded = true; return null; }
     return d;
   },
+  // v0.4.4: v4 -> v5 adds play time, Couch Cash found, job state. Everything else carries over unchanged.
+  migrate(d) {
+    if (!d || typeof d !== "object" || d.version !== 4) return d;
+    return Object.assign({}, d, { version: 5, playMs: 0, coinsFound: [], jobs: { mowDay: null, extraAt: null } });
+  },
+  // v0.4.4: device prefs outside the save (Touch Controls), so Reset Game keeps them.
+  PREFS_KEY: "skyreach_prefs",
+  prefs() { const s = this.storage(); try { const p = s && JSON.parse(s.getItem(this.PREFS_KEY) || "null"); return p && typeof p === "object" ? p : {}; } catch (e) { return {}; } },
+  setPref(k, v) { const s = this.storage(); if (!s) return; try { const p = this.prefs(); p[k] = v; s.setItem(this.PREFS_KEY, JSON.stringify(p)); } catch (e) {} },
   clear() { const s = this.storage(); if (s) { s.removeItem(SAVE_KEY); LEGACY_SAVE_KEYS.forEach(k => s.removeItem(k)); } }
 };
 Object.assign(window, { Save, SAVE_KEY, SAVE_VERSION });

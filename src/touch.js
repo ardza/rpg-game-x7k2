@@ -23,8 +23,17 @@ const Touch = {
     const fit = () => this.fit(canvas); fit(); window.addEventListener("resize", fit); window.addEventListener("orientationchange", fit);
     // no scroll / pinch zoom / double-tap zoom
     for (const ev of ["touchmove", "gesturestart", "dblclick"]) document.addEventListener(ev, e => { if (!(Input.textSink && e.target && e.target.tagName === "INPUT")) e.preventDefault(); }, { passive: false });
-    if (!this.isTouch()) return;
-    this.enabled = true; const U = GAME_DATA.touchUI, root = document.createElement("div"); root.id = "touch-ui";
+    this.ready = true; this.apply(this.mode || "auto");
+  },
+  // v0.4.4 setting (menu "Touch Controls: Auto / On / Off", saved in game.settings.touchControls). Auto = touch devices only.
+  modes: ["auto", "on", "off"],
+  want(mode) { return mode === "on" || (mode !== "off" && this.isTouch()); },
+  apply(mode) { this.mode = this.modes.includes(mode) ? mode : "auto"; if (!this.ready) return this.mode; const on = this.want(this.mode);
+    if (on && !this.root) this.build(); if (this.root) this.root.style.display = on ? "" : "none";
+    if (!on) { for (const k of ["up", "down", "left", "right", "a", "b", "menu"]) Input.release(k); this.dpadDir = null; }
+    this.enabled = on; return this.mode; },
+  build() {
+    const U = GAME_DATA.touchUI, root = document.createElement("div"); root.id = "touch-ui";
     root.style.cssText = "position:fixed;inset:0;pointer-events:none;touch-action:none;z-index:10;user-select:none;-webkit-user-select:none";
     const bg = src => src ? "url('" + src + "') center/100% 100% no-repeat" : "";
     for (const b of U.buttons) { const el = document.createElement("div"); el.id = "btn-" + b.id;
@@ -48,7 +57,7 @@ const Touch = {
       el.addEventListener("contextmenu", e => e.preventDefault());
       root.appendChild(el); this.els[b.id] = el;
     }
-    document.body.appendChild(root);
+    document.body.appendChild(root); this.root = root;
   }
 };
 window.Touch = Touch;
