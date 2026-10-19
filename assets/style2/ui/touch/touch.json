@@ -1,0 +1,106 @@
+{
+ "note": "Full opacity in files; code applies ~35% alpha. Pressed = darker fill, 2px inset, no drop edge. dpad (144) is the full cross, dpad_pressed is the whole cross darkened; dpad_pressed_<dir> highlights one arm. dpad_<dir>(_pressed) are standalone 48px buttons.",
+ "opacity": 0.35,
+ "files": [
+  {
+   "file": "ui/touch/dpad.png",
+   "w": 144,
+   "h": 144
+  },
+  {
+   "file": "ui/touch/dpad_up.png",
+   "w": 48,
+   "h": 48
+  },
+  {
+   "file": "ui/touch/dpad_down.png",
+   "w": 48,
+   "h": 48
+  },
+  {
+   "file": "ui/touch/dpad_left.png",
+   "w": 48,
+   "h": 48
+  },
+  {
+   "file": "ui/touch/dpad_right.png",
+   "w": 48,
+   "h": 48
+  },
+  {
+   "file": "ui/touch/btn_z.png",
+   "w": 72,
+   "h": 72
+  },
+  {
+   "file": "ui/touch/btn_x.png",
+   "w": 72,
+   "h": 72
+  },
+  {
+   "file": "ui/touch/btn_menu.png",
+   "w": 48,
+   "h": 48
+  },
+  {
+   "file": "ui/touch/dpad_up_pressed.png",
+   "w": 48,
+   "h": 48
+  },
+  {
+   "file": "ui/touch/dpad_down_pressed.png",
+   "w": 48,
+   "h": 48
+  },
+  {
+   "file": "ui/touch/dpad_left_pressed.png",
+   "w": 48,
+   "h": 48
+  },
+  {
+   "file": "ui/touch/dpad_right_pressed.png",
+   "w": 48,
+   "h": 48
+  },
+  {
+   "file": "ui/touch/btn_z_pressed.png",
+   "w": 72,
+   "h": 72
+  },
+  {
+   "file": "ui/touch/btn_x_pressed.png",
+   "w": 72,
+   "h": 72
+  },
+  {
+   "file": "ui/touch/btn_menu_pressed.png",
+   "w": 48,
+   "h": 48
+  },
+  {
+   "file": "ui/touch/dpad_pressed_up.png",
+   "w": 144,
+   "h": 144
+  },
+  {
+   "file": "ui/touch/dpad_pressed_down.png",
+   "w": 144,
+   "h": 144
+  },
+  {
+   "file": "ui/touch/dpad_pressed_left.png",
+   "w": 144,
+   "h": 144
+  },
+  {
+   "file": "ui/touch/dpad_pressed_right.png",
+   "w": 144,
+   "h": 144
+  },
+  {
+   "file": "ui/touch/dpad_pressed.png",
+   "w": 144,
+   "h": 144
+  }
+ ]
+}

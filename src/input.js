@@ -1,6 +1,9 @@
 // Keyboard state: held keys + one-shot "pressed" edges consumed per frame.
 const Input = {
   held: {}, pressed: {}, textSink: null, // DEV-CHEATS: textSink (Admin Cheats text box) swallows all keys while set
+  // v0.4.3.1 touch buttons: same held/pressed state as keys
+  press(k) { if (this.textSink) return; if (!this.held[k]) this.pressed[k] = true; this.held[k] = true; },
+  release(k) { this.held[k] = false; },
   map: { ArrowUp: "up", KeyW: "up", ArrowDown: "down", KeyS: "down", ArrowLeft: "left", KeyA: "left",
          ArrowRight: "right", KeyD: "right", KeyZ: "a", Enter: "a", Space: "a", KeyX: "b", Escape: "b", Backspace: "b", KeyM: "menu" },
   init(target) {

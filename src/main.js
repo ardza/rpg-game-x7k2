@@ -173,7 +173,7 @@ class Game {
 }
 window.Game = Game;
 window.addEventListener("load", () => {
-  Input.init(window); Debug.init(window); TileSet.load(GAME_DATA.tileset); Sprites.load(GAME_DATA.sprites.images);
+  Input.init(window); Debug.init(window); Touch.init(document.getElementById("game")); TileSet.load(GAME_DATA.tileset); Sprites.load(GAME_DATA.sprites.images);
   window.game = new Game(document.getElementById("game"));
   requestAnimationFrame(t => window.game.frame(t));
 });
