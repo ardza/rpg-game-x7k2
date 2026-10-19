@@ -1,6 +1,6 @@
 // Pack opening (v0.3.3, DESIGN v0.4 §4). Packs.roll is pure (uses Formulas.rand, so it's seedable);
 // Packs.open consumes a pack, adds the cards, counts packsOpened.<tier>, updates pity and saves (v4).
-const RARITY_ORDER = ["C", "U", "R", "E", "L"];
+const RARITY_ORDER = GAME_DATA.rarityOrder; // v0.4.6: C, R, UR, L
 const Packs = {
   cardsOf(r) { return Object.keys(GAME_DATA.cards).filter(id => GAME_DATA.cards[id].rarity === r); },
   rollRarity(odds) { let x = Formulas.rand(); for (const r of RARITY_ORDER) { if (odds[r] == null) continue; if (x < odds[r]) return r; x -= odds[r]; } return "C"; },
@@ -11,13 +11,13 @@ const Packs = {
     for (let i = 0; i < P.cards; i++) {
       const rolled = this.rollRarity(P.odds); let r = rolled, forced = false;
       if (pityOn && i === pity.slot && RARITY_ORDER.indexOf(r) < RARITY_ORDER.indexOf(pity.rarity)) { r = pity.rarity; forced = true; }
-      while (!this.cardsOf(r).length && r !== "C") r = RARITY_ORDER[RARITY_ORDER.indexOf(r) - 1]; // L -> E (only L is empty today)
+      while (!this.cardsOf(r).length && r !== "C") r = RARITY_ORDER[RARITY_ORDER.indexOf(r) - 1]; // empty tier -> next lower one
       const ids = this.cardsOf(r), cardId = ids[Math.floor(Formulas.rand() * ids.length)];
       out.push({ cardId, holo: Formulas.rand() < GAME_DATA.holoChance, rarity: r, rolled, rerolled: rolled !== r && !forced, pity: forced });
     }
     return out;
   },
-  hasEpicPlus(cards) { return cards.some(c => RARITY_ORDER.indexOf(c.rarity) >= RARITY_ORDER.indexOf("E")); },
+  hasPityHit(cards) { return cards.some(c => RARITY_ORDER.indexOf(c.rarity) >= RARITY_ORDER.indexOf(GAME_DATA.pity.rarity)); }, // v0.4.6: Ultra Rare+ resets pity
   // Returns { ok, cards } or { ok:false, reason: "none" | "tier" }.
   open(game, tier) {
     if (!GAME_DATA.packs[tier]) return { ok: false, reason: "tier" };
@@ -25,14 +25,15 @@ const Packs = {
     const cards = this.roll(tier, game.pityCounter);
     for (const c of cards) c.uid = game.collection.add(c.cardId, c.holo).uid;
     game.packsOpened[tier] = (game.packsOpened[tier] | 0) + 1;
-    if (GAME_DATA.pity.tiers.includes(tier)) game.pityCounter = this.hasEpicPlus(cards) ? 0 : game.pityCounter + 1;
+    if (GAME_DATA.pity.tiers.includes(tier)) game.pityCounter = this.hasPityHit(cards) ? 0 : game.pityCounter + 1;
     game.rerolledLegendary = (game.rerolledLegendary | 0) + cards.filter(c => c.rerolled).length; // logged (not saved)
     const saved = Save.save(game);
     return { ok: true, cards, saved };
   },
   firstOwned(game) { return Object.keys(GAME_DATA.packs).find(t => game.inventory.packs[t] > 0) || null; }
 };
-const RARITY_SEQ = { C: "common", U: "uncommon", R: "rare", E: "epic", L: "legendary" };
+// v0.4.6: reveal glow follows the frame colour (Rare green = old uncommon seq, Ultra Rare blue = old rare seq); purple (epic) retired.
+const RARITY_SEQ = { C: "common", R: "uncommon", UR: "rare", L: "legendary" };
 // Pack-rip screen: open_<tier> (1280ms) -> one reveal_<rarity>[_holo] per card (reveal3 loops) -> summary.
 // Z: skip the tear (or the current reveal) / next card / close. X: jump to the summary.
 class PackOpenScreen {
@@ -53,7 +54,7 @@ class PackOpenScreen {
     if (this.phase === "open") return T("packOpen");
     if (!this.showsCard()) return "";
     const c = this.cards[this.idx], name = GAME_DATA.cards[c.cardId].name;
-    const k = c.rarity === "L" ? "packLegendary" : c.holo ? "packHolo" : c.rarity === "C" ? "packCommon" : c.rarity === "U" ? "packUncommon" : "packRarePlus";
+    const k = c.rarity === "L" ? "packLegendary" : c.holo ? "packHolo" : c.rarity === "C" ? "packCommon" : c.rarity === "UR" ? "packUltraRare" : "packRare";
     return k ? T(k, { name }) : "";
   }
   update(dt = 0) {

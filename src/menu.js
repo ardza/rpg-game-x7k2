@@ -11,15 +11,32 @@ const CardDraw = {
     else { ctx.fillStyle = "#f6f1e4"; ctx.fillRect(x + A.x * k, y + A.y * k, A.w * k, A.h * k); } // window backing
     if (!Sprites.draw(ctx, "card_" + cardId, x + A.x * k, y + A.y * k, A.w * k, A.h * k)) { ctx.fillStyle = c.color; ctx.fillRect(x + (A.x + 14) * k, y + (A.y + 6) * k, (A.w - 28) * k, (A.h - 12) * k); }
     if (hasFrame) Sprites.draw(ctx, fk, x, y, W, H);
-    ctx.fillStyle = "#1a1423"; ctx.font = Math.round(9 * k) + "px monospace"; ctx.fillText(c.name, x + 12 * k, y + 20 * k);
-    ctx.font = Math.round(8 * k) + "px monospace"; ctx.fillText(r.name + " · " + c.type, x + 12 * k, y + 116 * k);
-    const b = c.base; ctx.fillText(b.hp + "/" + b.atk + "/" + b.def + "/" + b.spd, x + 12 * k, y + 130 * k);
+    this.face(ctx, c, r, x, y, k);
     if (holo && !Sprites.draw(ctx, "frame_holo", x, y, W, H)) { ctx.fillStyle = "rgba(255,255,255,0.35)"; ctx.fillRect(x, y + 30 * k, W, 6 * k); ctx.fillRect(x, y + 70 * k, W, 4 * k); }
+  },
+  // v0.4.6 card face (Game Artist layout, APPROVED; GAME_DATA.cardLayout = ui/stats/stats.json + index.json, card units x k):
+  // name shrinks 9 -> 6px to fit 61; index "NNN/TTT" centred, bold 8, in the top-right plate; type line; 4 labeled stat rows
+  // (icon 8px at k<2 / 16px at k>=2, name, dotted leader, right-aligned bold number). No bars: stats can go past 100.
+  fit(ctx, text, maxW, font, minFont, bold) { let f = font; const set = () => { ctx.font = (bold ? "bold " : "") + f + "px monospace"; }; set();
+    const w = t => { const m = ctx.measureText && ctx.measureText(t); return m && m.width != null ? m.width : t.length * f * 0.6; };
+    while (f > minFont && w(text) > maxW) { f = Math.max(minFont, f - 0.5); set(); } return f; },
+  face(ctx, c, r, x, y, k) {
+    const Lc = GAME_DATA.cardLayout, N = Lc.index.name, I = Lc.index.index, S = Lc.stats, ink = S.colors.ink, ta = ctx.textAlign;
+    ctx.fillStyle = ink; this.fit(ctx, c.name, N.maxW * k, N.font * k, N.minFont * k, false); ctx.fillText(c.name, x + N.x * k, y + N.baseline * k);
+    if (c.index) { const t = GAME_DATA.cardIndexLabel(c.index); ctx.fillStyle = I.color || ink; this.fit(ctx, t, I.maxW * k, I.font * k, (I.minFont || I.font) * k, I.bold);
+      ctx.textAlign = "center"; ctx.fillText(t, x + I.cx * k, y + I.baseline * k); ctx.textAlign = ta || "left"; }
+    ctx.fillStyle = ink; ctx.font = Math.round(S.font * k) + "px monospace"; ctx.fillText(r.name + " · " + c.type, x + S.typeLine.x * k, y + S.typeLine.y * k);
+    const icon = k < 2 ? 8 : 16;
+    S.labels.forEach(([key, label], i) => { const ry = y + (S.rowY0 + i * S.rowH) * k, v = String(c.base[key]);
+      if (!Sprites.draw(ctx, "stat_" + key + "_" + icon, x + S.iconX * k, ry, S.iconSize * k, S.iconSize * k)) { ctx.fillStyle = S.colors[key]; ctx.fillRect(x + S.iconX * k, ry, S.iconSize * k, S.iconSize * k); }
+      ctx.fillStyle = ink; ctx.font = "bold " + Math.round(S.font * k) + "px monospace"; ctx.fillText(label, x + S.labelX * k, ry + S.textBaseline * k);
+      ctx.fillStyle = S.colors.leader; const d = Math.max(1, Math.round(k)); for (let lx = S.leader.x0; lx < S.leader.x1; lx += 3) ctx.fillRect(x + lx * k, ry + S.leader.y * k, d, d); // dotted leader
+      ctx.fillStyle = ink; ctx.font = "bold " + Math.round(S.numFont * k) + "px monospace"; ctx.textAlign = "right"; ctx.fillText(v, x + S.numX * k, ry + S.numBaseline * k); ctx.textAlign = ta || "left"; });
   }
 };
 class PauseMenu {
   static get FRAME() { return { x: 300, y: 20, w: 400, h: 464 }; } // v0.4.5 (was 400,20,240,440)
-  constructor(game) { this.game = game; this.options = ["Binder", "Bag", "Shop", "Save", "Touch Controls", "Battle Timing", "Reset Game", "Close"]; // v0.4.4: Touch Controls Auto/On/Off
+  constructor(game) { this.game = game; this.options = ["Binder", "Bag", "Shop", "Save", "Touch Controls", "Reset Game", "Close"] /* v0.4.6: Battle Timing removed (no timing step) */; // v0.4.4: Touch Controls Auto/On/Off
     if (window.DEV_CHEATS && window.DevCheats) this.options.splice(4, 0, DevCheats.label); // DEV-CHEATS
     this.idx = 0; this.view = "root"; this.msg = ""; this.closed = false; this.sel = 0; }
   update(dt = 0) {
@@ -62,12 +79,10 @@ class PauseMenu {
     if (Input.wasPressed("down")) this.idx = (this.idx + 1) % n;
     if (Input.wasPressed("b") || Input.wasPressed("menu")) { this.closed = true; return; }
     if (this.options[this.idx] === "Touch Controls" && (Input.wasPressed("left") || Input.wasPressed("right"))) { this.cycleTouch(Input.wasPressed("left") ? -1 : 1); return; }
-    if (this.options[this.idx] === "Battle Timing" && (Input.wasPressed("left") || Input.wasPressed("right"))) { this.cycleTiming(Input.wasPressed("left") ? -1 : 1); return; }
     if (Input.wasPressed("a")) {
       const o = this.options[this.idx];
       if (o === "Close") this.closed = true;
       else if (o === "Touch Controls") { this.cycleTouch(1); return; }
-      else if (o === "Battle Timing") { this.cycleTiming(1); return; }
       else if (o === "Reset Game") { this.confirm = { kind: "reset", choice: 1 /* No */ }; this.msg = ""; return; }
       else if (window.DEV_CHEATS && o === DevCheats.label) { this.cheat = new CheatInput(this); return; } // DEV-CHEATS
       else if (o === "Save") { this.view = "msg"; this.msg = Save.save(g) ? T("saved") : T("saveFailed"); }
@@ -77,10 +92,7 @@ class PauseMenu {
   // v0.4.4: Auto (touch devices only) / On / Off; saved in settings (save format stays v5).
   touchMode() { const m = this.game.settings.touchControls; return Touch.modes.includes(m) ? m : "auto"; }
   cycleTouch(d) { const M = Touch.modes, g = this.game; g.settings.touchControls = M[(M.indexOf(this.touchMode()) + d + M.length) % M.length]; Touch.apply(g.settings.touchControls); Save.setPref("touchControls", g.settings.touchControls); Save.save(g); }
-  // v0.4.5 Battle Timing: Off (default, no timing step, flat damage) / Easy / Normal. Saved with the game.
-  timingMode() { const m = this.game.settings.battleTiming; return PartyBattle.TIMINGS.includes(m) ? m : "off"; }
-  cycleTiming(d) { const M = PartyBattle.TIMINGS, g = this.game; g.settings.battleTiming = M[(M.indexOf(this.timingMode()) + d + M.length) % M.length]; Save.save(g); }
-  optionLabel(o) { if (o === "Battle Timing") return "Battle Timing: " + ({ off: "Off", easy: "Easy", normal: "Normal" })[this.timingMode()];
+  optionLabel(o) {
     return o === "Touch Controls" ? "Touch Controls: " + ({ auto: "Auto", on: "On", off: "Off" })[this.touchMode()] : o; }
   requestOpen(tier) { this.confirm = { tier, choice: 1 /* No */ }; this.msg = ""; }
   openPack(tier) { const r = Packs.open(this.game, tier); if (r.ok) { this.pack = new PackOpenScreen(this.game, tier, r.cards); this.msg = ""; } return r; }

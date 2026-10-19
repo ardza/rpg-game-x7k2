@@ -1,0 +1,23 @@
+{
+ "units": "card px (120x168), multiply by k",
+ "name": {
+  "x": 10,
+  "baseline": 20,
+  "maxW": 61,
+  "font": 9,
+  "minFont": 6,
+  "note": "shrink-to-fit, plate is x8-72"
+ },
+ "index": {
+  "cx": 95,
+  "baseline": 18,
+  "maxW": 35,
+  "font": 8,
+  "minFont": 7,
+  "bold": true,
+  "color": "#1a1423",
+  "align": "center",
+  "format": "NNN/TTT (no #)",
+  "note": "plate x75-114, y7-24; rarity underline at y21. TTT = total collectible cards from master list"
+ }
+}

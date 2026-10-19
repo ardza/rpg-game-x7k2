@@ -7,7 +7,7 @@ GAME_DATA.packAnim.cardAt = { x: 36, y: 28 };         // real card (120x168) ove
 GAME_DATA.packAnim.cardFrames = ["reveal2", "reveal3"]; // frames that show the real card
 GAME_DATA.packAnim.scale = 2;                          // 192x224 frame drawn at 2x (384x448), centered on 720x528
 for (const [k, s] of Object.entries(GAME_DATA.packAnim.sequences)) GAME_DATA.sprites.images["pack_" + k] = GAME_DATA.packAnim.dir + s.sheet;
-// Pity (DESIGN §4): 10 Premium/Elite packs in a row with no Epic+ -> next one guarantees an Epic in slot 5. Basic has no pity.
+// Pity (DESIGN §4): 10 Premium/Elite packs in a row with no Ultra Rare+ -> next one guarantees an Ultra Rare in slot 5 (v0.4.6: was Epic). Basic has no pity.
 GAME_DATA.packConfirmLockMs = 500; // ignore Z after the pack screen closes (mash fix)
 GAME_DATA.packAnotherDefault = 1; // Open another? 0 = Yes, 1 = No (default No)
-GAME_DATA.pity = { after: 10, tiers: ["premium", "elite"], rarity: "E", slot: 4 };
+GAME_DATA.pity = { after: 10, tiers: ["premium", "elite"], rarity: "UR", slot: 4 };

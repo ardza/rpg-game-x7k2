@@ -66,16 +66,16 @@ GAME_DATA.sprites.images.thorne_bust = "assets/style2/npc/thorne_bust_96.png";
 GAME_DATA.sprites.images.npc_pell = "assets/style2/overworld/pell_walk_48.png";
 GAME_DATA.sprites.images.pell_bust = "assets/style2/npc/pell_bust_96.png";
 GAME_DATA.sprites.images.deco_gig_cam = "assets/style2/tiles/gig_cam_48.png";
-GAME_DATA.pb.fighters.thorne = "assets/style2/fighters/thorne_{s}_f{f}.png";
-for (const s of [96, 48]) for (let f = 0; f < 3; f++) GAME_DATA.sprites.images["ft_thorne_" + s + "_" + f] = "assets/style2/fighters/thorne_" + s + "_f" + f + ".png";
-// Cards as enemies (trainer decks): enemy id "card_<id>", stats/moves/barks from the card. ai "card": 50/50 basic/special, random target.
-for (const id of ["hustle_hamster", "burner_beetle"]) { const c = GAME_DATA.cards[id];
-  GAME_DATA.enemies["card_" + id] = { name: c.name, type: c.type, base: c.base, baseXP: GAME_DATA.pb.baseXP[c.rarity], moves: c.moves, ai: "card", cardArt: id, barks: { enter: id + "_enter", ko: id + "_ko" } }; }
+// v0.4.6: no Thorne fighter in battle (creatures only); his overworld sprite + bust stay.
+// Cards as enemies (trainer decks, wild fights, people's creatures): enemy id "card_<id>", stats/moves/barks from the card. ai "card": 50/50 basic/special.
+for (const id of Object.keys(GAME_DATA.cards)) { const c = GAME_DATA.cards[id];
+  GAME_DATA.enemies["card_" + id] = { name: c.name, short: c.short, type: c.type, base: c.base, baseXP: GAME_DATA.pb.baseXP[c.rarity], moves: c.moves, ai: "card", cardArt: id, barks: { enter: GAME_DATA.pb.barkPrefix[id] + "_enter", ko: GAME_DATA.pb.barkPrefix[id] + "_ko" } }; }
 Object.assign(GAME_DATA.enemyGroups, {
-  trainer_thorne: { members: [["card_hustle_hamster", 2], ["card_burner_beetle", 2]], bg: "drop_day", trainer: { id: "thorne", art: "thorne", noRun: "thorne_no_run", winLine: "thorne_lose", loseLine: "thorne_win", coins: 30 /* Director: flat 30 for beating Thorne */ } },
-  wild_ricky:   { members: [["ricky", 2]], bg: "drop_day", wild: true },
-  wild_unboxer: { members: [["unboxer", 2]], bg: "drop_day", wild: true },
-  wild_pair:    { members: [["ricky", 2], ["unboxer", 3]], bg: "drop_day", wild: true }
+  trainer_thorne: { members: [["card_hustle_hamster", 2], ["card_burner_beetle", 2]], bg: "drop_day", trainer: { id: "thorne", noRun: "thorne_no_run", winLine: "thorne_lose", loseLine: "thorne_win", coins: 30 /* Director: flat 30 for beating Thorne */ } },
+  // v0.4.6 (story/v046_battle.md): wild grass fights are creatures only. Same levels and weights; group ids kept.
+  wild_ricky:   { members: [["card_copypasta_cat", 2]], bg: "drop_day", wild: true },
+  wild_unboxer: { members: [["card_reply_guy_rat", 2]], bg: "drop_day", wild: true },
+  wild_pair:    { members: [["card_copypasta_cat", 2], ["card_mukbang_mole", 2]] /* v0.4.6 balance: Mole was Lv3 */, bg: "drop_day", wild: true }
 });
 GAME_DATA.jobs = { mow: { pay: 15 }, extra: { pay: 20, holdMs: 3000, cooldownMs: 10 * 60 * 1000 /* play time */ } };
 Object.assign(GAME_DATA.text, { // story/v044_town.md (Story Writer, approved by Director)

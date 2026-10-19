@@ -36,9 +36,16 @@ const Save = {
     return d;
   },
   // v0.4.4: v4 -> v5 adds play time, Couch Cash found, job state. Everything else carries over unchanged.
+  // v0.4.6 (save stays v5): drop the removed Battle Timing / wide-window settings and map any stored v0.4.5 rarity codes (C/U/R/E/L)
+  // to the 4 tiers. Today saves don't store rarity (cards look it up by id), so this is a safety net for hand-edited/future data.
   migrate(d) {
-    if (!d || typeof d !== "object" || d.version !== 4) return d;
-    return Object.assign({}, d, { version: 5, playMs: 0, coinsFound: [], jobs: { mowDay: null, extraAt: null } });
+    if (!d || typeof d !== "object") return d;
+    if (d.version === 4) d = Object.assign({}, d, { version: 5, playMs: 0, coinsFound: [], jobs: { mowDay: null, extraAt: null } });
+    if (d.version !== 5) return d;
+    if (d.settings && typeof d.settings === "object") { d.settings = Object.assign({}, d.settings); delete d.settings.battleTiming; delete d.settings.wideWindows; }
+    const RL = GAME_DATA.rarityLegacy, fix = e => e && typeof e === "object" && typeof e.rarity === "string" && !GAME_DATA.rarities[e.rarity] && RL[e.rarity] ? Object.assign({}, e, { rarity: RL[e.rarity] }) : e;
+    if (Array.isArray(d.collection)) d.collection = d.collection.map(fix);
+    return d;
   },
   // v0.4.4: device prefs outside the save (Touch Controls), so Reset Game keeps them.
   PREFS_KEY: "skyreach_prefs",

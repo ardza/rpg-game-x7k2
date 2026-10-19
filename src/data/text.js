@@ -14,30 +14,23 @@ GAME_DATA.text = {
   grumblet_move: "Rug Pull! {target}'s buffs are gone. So is the dev.",
   grumblet_ko: "Grumblet: 'It's not a loss until I sell!'",
   slug_enter: "Doomscroll Slug hasn't blinked in 9 hours.",
-  slug_move: "Ratio! Brainrot hits {target}. Swinging at anything now.",
+  slug_move: "Ratio! Brainrot hits {target}. Focus: gone.", // [writer] v0.4.6 story/v046_battle.md
   slug_ko: "Doomscroll Slug finally hit the end of the feed.",
   goose_enter: "Gym Bro Goose: 'You even lift, bro?'",
   goose_move: "Gym Bro Goose pooped on {target}. That's a protein shake now.",
   goose_ko: "Gym Bro Goose: 'Rest day. Totally planned.'",
-  ricky_move: "Ricky cranked the ring light. Blinded: {target}.",
-  unboxer_move: "Unboxing Kid threw packaging at {target}! It's 90% air.",
-  ricky_selfie_jab: "Selfie stick to the face for {target}. Front camera. Brutal.",
-  ricky_flash: "Ring Light Flash! Pores exposed: {target}. Cringe.",
-  unboxer_box_cutter: "Unboxing Kid swung the box cutter. 'Careful, this is a collab!'",
-  unboxer_peanuts: "Packing peanuts everywhere! Pooped On: {target}.",
   maxx_intro: ["Day 900 of the stream, chat! We got a VISITOR!", "Say hi to 12 viewers. Say it louder. LOUDER."],
-  maxx_hot_take: "Maxx dropped a scorching take. Aimed right at {target}.",
-  maxx_chat_spam: "CHAT SPAM! The chat's on fire. Literally. He set it on fire.",
-  maxx_donation: "Donation Goal! '$5 for a dance from {target}!' Frozen: {target}.",
+  maxx_hot_take: "Maxx yells a take. Kraken delivers it. Hit: {target}.", // [writer] v0.4.6 moved to Maxx's Kraken
+  maxx_chat_spam: "CHAT SPAM! Kraken slaps the chat. The chat is on fire.",
+  maxx_donation: "Donation Goal! '$5 for a dance!' Frozen up: {target}.",
   maxx_low_hp: "CHAT, CLIP THAT!",
   maxx_ko: ["Maxx Volume: 'Stream's... ending... early...'", "He hasn't slept in 900 days. He's asleep now."],
   maxx_no_run: "You can't leave. You're on stream.",
-  ricky_enter: "Hold on, my lighting's off.", ricky_ko: "Don't forget to like... this...",
-  unboxer_enter: "This video is NOT sponsored. (It's sponsored.)", unboxer_ko: "Mom said it's not a real job!",
+  // [writer] v0.4.6 people fights (story/v046_npc_fights.md, APPROVED): intro once per fight; ko only when the person's last creature goes down
+  ricky_intro: "Ricky won't fight. Bad angles. He sends out his Parrot.", ricky_ko: "Parrot's down. Ricky's already filming the reaction.",
+  unboxer_intro: "Unboxing Kid tears open a box. A Raccoon was in there?", unboxer_ko: "Raccoon's out. Unboxing Kid rates it 2 stars.",
   pbSwap: "Tag out! {out} to the bench, {in} takes the shot.", pbSwapNone: "Bench is empty. Nobody wants this collab.", pbSwapPlayer: "You can't bench yourself. You're the main character.", // v0.4.1 swap lines (Story Writer)
   // [writer] v0.4.0 party battle system lines (story/battle_text.md)
-  pbPressAttack: "Timing! Press Z when it flashes.",                                 // v0.4.5 Battle Timing on (placeholder, Story Writer can swap)
-  pbPressBlock: "Incoming! Press Z when it flashes to block.",                       // v0.4.5
   pbStart: "{n} wants smoke!",
   pbWin: "W. +{coins} coins, +{xp} XP.",
   pbLose: "Lights out. Mom dragged you home. Again.",
@@ -45,7 +38,6 @@ GAME_DATA.text = {
   pbRunFail: "Can't leave. Too many witnesses.",
   pbSkip: "Cringe! {name}: skipping this turn to recover.",
   pbHit: "{move} from {user}! {target}: -{dmg} HP.",
-  pbMiss: "{press}!",
   pbFaint: "KO! {name}: logged off.",
   pbHeal: "Healed! {target}: +{n} HP.",
   pbNoHeal: "Pooped On. {target}: too gross to heal.",
@@ -54,7 +46,10 @@ GAME_DATA.text = {
   pbCheer: "Hyped! {target}: ATK up.",
   pbGuard: "Guard up! {target}: blocking the haters.",
   pbStatus: "{status}! {target} got hit with it.",
-  pbWrong: "Brainrot! {user} swung at {target} instead.",
+  pbWrong: "Brainrot! Turn lost to doomscrolling: {user}.", // [writer] v0.4.6 story/v046_battle.md (33% lose turn)
+  pbHitAll: "{move} from {user}! Reply-all. Everyone's in this now.", // [writer] v0.4.6 'all' moves: once, then pbHit per target
+  pbFrontUp: "Next in line takes the front: {name}.", pbFrontUpEnemy: "Another one steps up: {name}. Of course.", pbSwapActive: "Places swapped. Up front now: {name}.", // [writer] v0.4.6
+  noCards: "No cards, no fight. Rip a pack first.", // [interim, programmer] v0.4.6: Z on a fight with an empty binder (Story Writer pass)
   pbDrop: "Maxx dropped a {pack}! Finders keepers.",
   pbLevel: "Level up! {name}: now Lv{n}.",
   encounter:      "{name} wandered into your calendar. Unscheduled.",       // [writer] battle start (wild)
@@ -176,10 +171,11 @@ Object.assign(GAME_DATA.text, {
   packNone:     "No packs. Your wallet called. It's crying.",       // [writer]
   packOpen:      "Ripping it open. Chat is NOT here for this.",          // [writer] pull reactions
   packCommon:    "{name}. A Common. Classic.",
-  packRarePlus:  "{name}! Act casual. Don't scream.",
-  packUncommon:  "{name}. Uncommon. Not bad, not content.",
+  packRare:      "{name}. A Rare. Okay, okay.", // [writer] v0.4.6
+  packUltraRare: "{name}!! ULTRA RARE. Act casual. Don't scream.", // [writer] v0.4.6
   packOpenAnother: "Open another? Your wallet says no. Your heart says yes.",
   packHolo:      "IT'S SHINY. {name} is holo!",
+  packRarePlus:  "{name}! Act casual. Don't scream.", // [writer] v0.4.6: reserved for Legendary only (story/v046_battle.md); not wired, Legendary pulls keep packLegendary
   packLegendary: "LEGENDARY {name}! Dad is crying in the shed.",
   roomBed:          "Your bed. Unmade since the last pack drop.",            // [writer] Room inspect lines
   roomPc:           "Your PC. 47 tabs of pack openings. Close them? No.",

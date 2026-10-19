@@ -1,0 +1,52 @@
+{
+ "card": [
+  120,
+  168
+ ],
+ "font": 7,
+ "typeLine": {
+  "x": 13,
+  "y": 116
+ },
+ "labels": [
+  [
+   "hp",
+   "HP"
+  ],
+  [
+   "atk",
+   "ATK"
+  ],
+  [
+   "def",
+   "DEF"
+  ],
+  [
+   "spd",
+   "SPD"
+  ]
+ ],
+ "rowY0": 119,
+ "rowH": 9,
+ "iconX": 13,
+ "iconSize": 7,
+ "labelX": 22,
+ "textBaseline": 7,
+ "numX": 107,
+ "numFont": 10,
+ "numBaseline": 8,
+ "leader": {
+  "x0": 42,
+  "x1": 88,
+  "y": 5
+ },
+ "colors": {
+  "hp": "#e0484a",
+  "atk": "#f08a3c",
+  "def": "#3d7fe0",
+  "spd": "#e8c020",
+  "ink": "#1a1423",
+  "leader": "#cbbf9f"
+ },
+ "notes": "All numbers in card units (multiply by k). Rows replace the old hp/atk/def/spd text line at y130. No bars (stats can exceed 100). Optional faint leader line from x0 to x1 at row y+5. Number is bold numFont, right-aligned, works up to 3 digits. Icon files: ui/stats/stat_<key>_8.png for k<2, _16.png for k>=2. Number right-aligned at numX. Font bold monospace 7*k."
+}

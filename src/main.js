@@ -18,7 +18,7 @@ class Game {
     this.deck = s && Array.isArray(s.deck) ? s.deck : []; this.active = s && Array.isArray(s.active) ? s.active : [];
     this.packsOpened = Object.assign({ basic: 0, premium: 0, elite: 0 }, s && s.packsOpened); this.packsTradedIn = (s && s.packsTradedIn) | 0; /* v0.3.4; old v4 saves default 0 */ this.pityCounter = (s && s.pityCounter) | 0; this.commonsTradedIn = (s && s.commonsTradedIn) | 0;
     this.hiddenFound = s ? s.hiddenFound.slice() : []; this.defeatedGroups = s && Array.isArray(s.defeatedGroups) ? s.defeatedGroups : [];
-    this.flags = s ? Object.assign({}, s.flags) : {}; this.playMs = s ? s.playMs : 0; this.coinsFound = s ? s.coinsFound.slice() : []; this.jobs = Object.assign({ mowDay: null, extraAt: null }, s && s.jobs); this.settings = Object.assign({ wideWindows: false, touchControls: "auto", battleTiming: "off" }, Save.prefs().touchControls ? { touchControls: Save.prefs().touchControls } : null, s && s.settings);
+    this.flags = s ? Object.assign({}, s.flags) : {}; this.playMs = s ? s.playMs : 0; this.coinsFound = s ? s.coinsFound.slice() : []; this.jobs = Object.assign({ mowDay: null, extraAt: null }, s && s.jobs); this.settings = Object.assign({ touchControls: "auto" }, Save.prefs().touchControls ? { touchControls: Save.prefs().touchControls } : null, s && s.settings); delete this.settings.battleTiming; delete this.settings.wideWindows; /* v0.4.6: no timing step; old v5 values ignored */
     this.party = []; // LEGACY creature party for the old 1v1 battle (not saved)
     this.roamers = this.map.def.roam ? new Roamers(this.map) : null; this.map.defeated = this.defeatedGroups;
     this.introIdx = 0; this.momT = 0; if (this.state === undefined && !this.flags.momIntroDone) this.player.facing = GAME_DATA.momWalkIn.playerFacing; this.notice = Save.discarded ? T("oldSave") : null;
@@ -55,7 +55,7 @@ class Game {
   // talk queue: lines shown one per Z; then() runs after the last one is dismissed
   sayLines(keys, then, bust = null) { this.talkQueue = keys.slice(1); this.talk = T(keys[0]); this.talkBust = bust; this.talkThen = then || null; }
   // Tall grass: the only forced fight. Returns the group id (or null) for one completed step on (x, y).
-  grassCheck(x, y) { const G = this.map.def.grass; if (!G || !this.map.isEncounter(x, y) || !(Formulas.rand() < G.rate)) return null; return Formulas.weightedPick(G.table, Formulas.rand()).group; }
+  grassCheck(x, y) { const G = this.map.def.grass; if (!G || !PartyBattle.canFight(this) /* v0.4.6: no cards, no wild fights */ || !this.map.isEncounter(x, y) || !(Formulas.rand() < G.rate)) return null; return Formulas.weightedPick(G.table, Formulas.rand()).group; }
   startGrassFight(grp) { const pre = this.flags.grassSeen ? [] : [T("grassFirst")]; this.flags.grassSeen = true; return this.startPartyBattle(grp, { pre }); }
   talkTrainer(d) { const f = this.flags;
     if (f.thorneBeaten) return this.sayLines(["thorne_after_win"], null, d.bust);
@@ -79,10 +79,11 @@ class Game {
       this.map.blocked.delete(d.x + "," + d.y); d.x = nx; d.y = ny; this.map.blocked.add(nx + "," + ny); } }
   // v0.4.0 party battles: visible enemy groups on the map (decor with group id)
   groupAt(x, y) { return (this.map.def.decor || []).find(d => d.group && d.x === x && d.y === y && !this.map.gone(d)); }
-  startPartyBattle(groupId, opts) { this.pbattle = new PartyBattle(this, groupId, opts); this.setState("pbattle"); return this.pbattle; }
-  finishPartyBattle() { // statuses clear after the fight; HP is restored (no healing spot yet); results saved (v4)
+  startPartyBattle(groupId, opts) { // v0.4.6: no player unit, so an empty binder can't fight (interim noCards line)
+    if (!PartyBattle.canFight(this)) { this.pbattle = null; this.talk = T("noCards"); return null; }
+    this.pbattle = new PartyBattle(this, groupId, opts); this.setState("pbattle"); return this.pbattle; }
+  finishPartyBattle() { // statuses clear after the fight; card HP is per fight (no healing spot yet); results saved. v0.4.6: no player HP
     const b = this.pbattle, res = b.result; this.pbattle = null; this.lastBattle = { group: b.groupId, result: res, reward: b.reward || null };
-    this.stats.hp = Formulas.hpAt(GAME_DATA.pb.player.base.hp, this.stats.level);
     if (res === "lose") { const sp = GAME_DATA.maps[GAME_DATA.startMap].spawn; this.warp(GAME_DATA.startMap, sp.x, sp.y, "down"); }
     this.setState("overworld"); Save.save(this);
   }
