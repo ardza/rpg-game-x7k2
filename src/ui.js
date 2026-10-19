@@ -17,6 +17,10 @@ const UI = {
     for (const word of String(text).split(" ")) { const t = line ? line + " " + word : word; if (width(t) > maxW && line) { out.push(line); line = word; } else line = t; }
     if (line) out.push(line); return out;
   },
+  // v0.4.5 text sizes (Commissioner: bigger text, readable at 390x844). Change sizes here only.
+  sizes: { dialog: 22, battle: 22, menu: 22, bar: 22, barSmall: 18, label: 13, labelSmall: 11, small: 16, arrow: 18, shop: 16 },
+  font(kind, bold) { return (bold ? "bold " : "") + (this.sizes[kind] || 16) + "px monospace"; },
+  textW(ctx, t) { return (ctx.measureText && ctx.measureText(t) && ctx.measureText(t).width) || String(t).length * 13; },
   textColor() { return Sprites.get(this.key) ? "#1a1423" : "#fff"; }
 };
 window.UI = UI;

@@ -18,7 +18,7 @@ class Game {
     this.deck = s && Array.isArray(s.deck) ? s.deck : []; this.active = s && Array.isArray(s.active) ? s.active : [];
     this.packsOpened = Object.assign({ basic: 0, premium: 0, elite: 0 }, s && s.packsOpened); this.packsTradedIn = (s && s.packsTradedIn) | 0; /* v0.3.4; old v4 saves default 0 */ this.pityCounter = (s && s.pityCounter) | 0; this.commonsTradedIn = (s && s.commonsTradedIn) | 0;
     this.hiddenFound = s ? s.hiddenFound.slice() : []; this.defeatedGroups = s && Array.isArray(s.defeatedGroups) ? s.defeatedGroups : [];
-    this.flags = s ? Object.assign({}, s.flags) : {}; this.playMs = s ? s.playMs : 0; this.coinsFound = s ? s.coinsFound.slice() : []; this.jobs = Object.assign({ mowDay: null, extraAt: null }, s && s.jobs); this.settings = Object.assign({ wideWindows: false, touchControls: "auto" }, Save.prefs().touchControls ? { touchControls: Save.prefs().touchControls } : null, s && s.settings);
+    this.flags = s ? Object.assign({}, s.flags) : {}; this.playMs = s ? s.playMs : 0; this.coinsFound = s ? s.coinsFound.slice() : []; this.jobs = Object.assign({ mowDay: null, extraAt: null }, s && s.jobs); this.settings = Object.assign({ wideWindows: false, touchControls: "auto", battleTiming: "off" }, Save.prefs().touchControls ? { touchControls: Save.prefs().touchControls } : null, s && s.settings);
     this.party = []; // LEGACY creature party for the old 1v1 battle (not saved)
     this.roamers = this.map.def.roam ? new Roamers(this.map) : null; this.map.defeated = this.defeatedGroups;
     this.introIdx = 0; this.momT = 0; if (this.state === undefined && !this.flags.momIntroDone) this.player.facing = GAME_DATA.momWalkIn.playerFacing; this.notice = Save.discarded ? T("oldSave") : null;
@@ -172,13 +172,16 @@ class Game {
     if (!Sprites.draw(ctx, W.sprite, mx, my, TILE, TILE, col * W.cell, W.row * W.cell, W.cell, W.cell)) { ctx.fillStyle = "#ff3e8a"; ctx.fillRect(mx + 8, my + 4, TILE - 16, TILE - 8); }
     if (!this.notice && this.momWalking()) return;
     if (!this.notice) { const L0 = GAME_DATA.momIntro[Math.min(this.introIdx, GAME_DATA.momIntro.length - 1)], bust = /^DAD/.test(L0.who) ? "dad_bust" : "mom_bust";
-      if (!Sprites.draw(ctx, bust, 500, 156, 192, 192)) { ctx.fillStyle = bust === "dad_bust" ? "#2f6bff" : "#ff3e8a"; ctx.fillRect(550, 170, 90, 178); } }
-    UI.frame(ctx, 20, 20, 680, 130) /* top: keeps Mom + player visible at the door */; ctx.fillStyle = UI.textColor();
-    if (this.notice) { ctx.font = "16px monospace"; UI.wrap(ctx, this.notice, 630).forEach((l, i) => ctx.fillText(l, 44, 60 + i * 22)); return; }
-    const L = GAME_DATA.momIntro[Math.min(this.introIdx, GAME_DATA.momIntro.length - 1)];
-    ctx.font = "bold 16px monospace"; ctx.fillText(L.who, 44, 52);
-    ctx.font = "16px monospace"; UI.wrap(ctx, "\"" + L.line + "\"", 630).forEach((l, i) => ctx.fillText(l, 44, 80 + i * 22));
-    ctx.font = "12px monospace"; ctx.fillText("▶", 670, 140); // v0.4.3: arrow only (Z still advances)
+      const n0 = (ctx.font = UI.font("dialog"), UI.wrap(ctx, "\"" + L0.line + "\"", 636).length), by0 = 20 + 72 + n0 * (UI.sizes.dialog + 8) + 6;
+      if (!Sprites.draw(ctx, bust, 500, Math.max(156, by0), 192, 192)) { ctx.fillStyle = bust === "dad_bust" ? "#2f6bff" : "#ff3e8a"; ctx.fillRect(550, 170, 90, 178); } }
+    // v0.4.5 bigger text; the box grows with the line count (top: keeps Mom + player visible at the door)
+    const lh = UI.sizes.dialog + 8; ctx.font = UI.font("dialog");
+    if (this.notice) { const N = UI.wrap(ctx, this.notice, 636); UI.frame(ctx, 20, 20, 680, 40 + N.length * lh); ctx.fillStyle = UI.textColor(); N.forEach((l, i) => ctx.fillText(l, 44, 20 + 20 + UI.sizes.dialog + i * lh)); return; }
+    const L = GAME_DATA.momIntro[Math.min(this.introIdx, GAME_DATA.momIntro.length - 1)], WL = UI.wrap(ctx, "\"" + L.line + "\"", 636), h = 72 + WL.length * lh;
+    UI.frame(ctx, 20, 20, 680, h); ctx.fillStyle = UI.textColor();
+    ctx.font = UI.font("dialog", true); ctx.fillText(L.who, 44, 56);
+    ctx.font = UI.font("dialog"); WL.forEach((l, i) => ctx.fillText(l, 44, 56 + lh + 4 + i * lh));
+    ctx.font = UI.font("arrow"); ctx.fillText("▶", 668, 20 + h - 14); // v0.4.3: arrow only (Z still advances)
   }
   renderWorld(ctx) {
     const camX = Math.max(0, Math.min(this.player.px + TILE / 2 - this.canvas.width / 2, this.map.width * TILE - this.canvas.width));
@@ -205,8 +208,9 @@ class Game {
     if (this.state === "pbattle") { this.pbattle.render(ctx); return; }
     this.renderWorld(ctx);
     if (this.talk) { const b = this.talkBust && Sprites.get(this.talkBust) ? 96 : 0; // player portrait for self-talk lines (v0.3.4)
-      if (b) Sprites.draw(ctx, this.talkBust, 24, 322, 96, 96);
-      UI.frame(ctx, 20, 420, 680, 90); ctx.fillStyle = UI.textColor(); ctx.font = "16px monospace"; UI.wrap(ctx, this.talk, 630).forEach((l, i) => ctx.fillText(l, 44, 456 + i * 22)); }
+      ctx.font = UI.font("dialog"); const lh = UI.sizes.dialog + 8, W = UI.wrap(ctx, this.talk, 636), h = 34 + W.length * lh, y = 516 - h; // v0.4.5 bigger text; box grows upward
+      if (b) Sprites.draw(ctx, this.talkBust, 24, y - 98, 96, 96);
+      UI.frame(ctx, 20, y, 680, h); ctx.fillStyle = UI.textColor(); W.forEach((l, i) => ctx.fillText(l, 44, y + 14 + UI.sizes.dialog + i * lh)); }
     if (this.state === "menu") this.menu.render(ctx);
     if (this.fadeMs > 0) { ctx.fillStyle = "#000"; ctx.fillRect(0, 0, this.canvas.width, this.canvas.height); }
   }

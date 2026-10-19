@@ -4,7 +4,7 @@
 const PB = () => GAME_DATA.pb;
 const PBF = { // pure helpers (tested directly)
   typeMult(a, d) { const r = PB().typeChart[a] || {}; return r[d] ?? 1; },
-  pressResult(deltaMs, wide) { const P = PB().press, k = wide ? P.wideMult : 1, d = Math.abs(deltaMs);
+  pressResult(deltaMs, wide, easy) { const P = PB().press, k = (wide ? P.wideMult : 1) * (easy ? P.easy.mult : 1), d = Math.abs(deltaMs);
     return deltaMs == null ? "miss" : d <= P.perfect * k ? "perfect" : d <= P.good * k ? "good" : "miss"; },
   buffCount(u) { return (u.st.cheer ? 1 : 0) + (u.st.guard ? 1 : 0); },
   effAtk(u) { return u.atk * (u.st.burnout ? PB().status.burnout.atk : 1); },
@@ -39,20 +39,22 @@ const PBF = { // pure helpers (tested directly)
     const b = o.base, L = o.level, hx = o.holo ? GAME_DATA.holoStatMult : 1, st = v => Math.floor(Formulas.statAt(v, L) * hx);
     const hp = o.hp || Math.floor(Math.floor(Formulas.hpAt(b.hp, L) * hx) * (o.hpMult || 1));
     const clean = Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined && v !== null));
-    return Object.assign(clean, { side, level: L, maxHp: hp, hp, atk: st(b.atk), def: st(b.def), spd: st(b.spd), st: {}, skips: 0, numb: 0, pendingSkip: false });
+    return Object.assign(clean, { side, level: L, maxHp: hp, hp, shown: hp, atk: st(b.atk), def: st(b.def), spd: st(b.spd), st: {}, skips: 0, numb: 0, pendingSkip: false });
   }
 };
 class PartyBattle {
+  static get TIMINGS() { return ["off", "easy", "normal"]; }
   constructor(game, groupId, opts = {}) {
     const G = GAME_DATA.enemyGroups[groupId]; if (!G) throw new Error("Unknown enemy group " + groupId);
     this.game = game; this.groupId = groupId; this.group = G; this.boss = !!G.boss; this.auto = !!opts.auto; this.wide = !!(game.settings && game.settings.wideWindows);
+    this.timing = PartyBattle.TIMINGS.includes(game.settings && game.settings.battleTiming) ? game.settings.battleTiming : "off"; // v0.4.5
     this.t = 0; this.round = 0; this.stamina = PB().stamina.start; this.presses = []; this.msgs = []; this.done = false; this.result = null; this.cmd = 0; this.tsel = 0;
     const P = PB().player, pl = game.stats.level;
     this.player = PBF.makeUnit("party", { id: "player", art: "player", name: P.name, type: P.type, base: P.base, level: pl, isPlayer: true });
     const deck = this.deckEntries();
-    this.cards = deck.map(e => { const c = GAME_DATA.cards[e.cardId]; return PBF.makeUnit("party", { id: e.uid, uid: e.uid, cardId: e.cardId, art: e.cardId, name: c.name, type: c.type, base: c.base, level: e.level, holo: e.holo, moves: c.moves, rarity: c.rarity }); });
+    this.cards = deck.map(e => { const c = GAME_DATA.cards[e.cardId]; return PBF.makeUnit("party", { id: e.uid, uid: e.uid, cardId: e.cardId, art: e.cardId, name: c.name, short: c.short, type: c.type, base: c.base, level: e.level, holo: e.holo, moves: c.moves, rarity: c.rarity }); });
     this.active = this.cards.slice(0, PB().activeCards); this.bench = this.cards.slice(PB().activeCards);
-    this.enemies = G.members.map(([id, L], i) => { const E = GAME_DATA.enemies[id]; return PBF.makeUnit("enemy", { id: id + "_" + i, eid: id, art: E.cardArt || id, name: E.name, type: E.type, base: E.base, level: L, moves: E.moves, ai: E.ai, boss: !!E.boss, hp: E.hp, hpMult: E.hpMult, def0: E }); });
+    this.enemies = G.members.map(([id, L], i) => { const E = GAME_DATA.enemies[id]; return PBF.makeUnit("enemy", { id: id + "_" + i, eid: id, art: E.cardArt || id, name: E.name, short: E.short, type: E.type, base: E.base, level: L, moves: E.moves, ai: E.ai, boss: !!E.boss, hp: E.hp, hpMult: E.hpMult, def0: E }); });
     this.trainer = G.trainer || null;
     const lines = (opts.pre || []).concat([T("pbStart", { n: this.enemies.length > 1 ? this.enemies[0].name + " & co." : this.enemies[0].name })]);
     for (const e of this.enemies.filter((e, i, a) => a.findIndex(x => x.eid === e.eid) === i)) if (e.def0.barks && e.def0.barks.enter) lines.push(...TL(e.def0.barks.enter));
@@ -171,21 +173,25 @@ class PartyBattle {
     if (pre.length) return this.say(pre, go); go();
   }
   // --- timed presses (§6): attack cue fixed after wind-up; block cue 400-900ms (seeded)
+  // v0.4.5: Battle Timing Off skips the step (flat damage); auto (sim) and forced presses always use the timing step.
+  get timed() { return this.auto || this.forcePress != null || this.timing !== "off"; }
+  get easy() { return this.timing === "easy" && !this.auto; }
   beginPress(kind, act) {
-    const P = PB().press; this.act = act; this.pressKind = kind; this.phase = "press"; this.t = 0; this.pressAt = null;
+    if (!this.timed) { this.act = act; return this.resolve(act, PB().press.flat, true); }
+    const P0 = PB().press, P = this.easy ? Object.assign({}, P0, P0.easy) : P0; this.act = act; this.pressKind = kind; this.phase = "press"; this.t = 0; this.pressAt = null;
     this.cue = kind === "attack" ? P.attackCueMs : P.blockCueMin + Math.floor(Formulas.rand() * (P.blockCueMax - P.blockCueMin + 1));
     if (this.auto || (window.Debug && Debug.autoPerfect)) this.pressAt = this.forcePress != null ? this.cue + this.forcePress : (window.Debug && Debug.autoPerfect ? this.cue : null);
     if (this.auto && this.forcePress == null) { const x = Formulas.rand(); this.pressAt = this.cue + (x < 0.2 ? 0 : x < 0.7 ? 100 : 300); }
     if (this.auto) this.endPress();
   }
-  endPress() { const r = PBF.pressResult(this.pressAt == null ? null : this.pressAt - this.cue, this.wide); this.presses.push(r); this.resolve(this.act, r); }
-  resolve(a, press) {
+  endPress() { const r = PBF.pressResult(this.pressAt == null ? null : this.pressAt - this.cue, this.wide, this.easy); this.presses.push(r); this.resolve(this.act, r); }
+  resolve(a, press, flat) {
     const m = PB().moves[a.move], u = a.user, lines = [], targets = a.targets.filter(t => t.hp > 0);
     const barkAt = lines.length, landed = [];
     for (const t of targets) {
       if (t.hp <= 0) continue; // multi-hit: target already KO'd by an earlier hit
       const dmg = PBF.damage(u, t, m, { targets: m.hits ? 1 : targets.length, attackPress: a.user.side === "party" ? press : null, blockPress: t.side === "party" && u.side === "enemy" ? press : null });
-      t.hp = Math.max(0, t.hp - dmg); lines.push(T("pbHit", { user: u.name, move: m.name, target: t.name, dmg }) + (press && press !== "miss" ? " (" + press.toUpperCase() + ")" : ""));
+      t.hp = Math.max(0, t.hp - dmg); lines.push(T("pbHit", { user: u.name, move: m.name, target: t.name, dmg }) + (press && press !== "miss" && !flat ? " (" + press.toUpperCase() + ")" : ""));
       if (t.hp > 0 && m.status) { const l = this.applyStatus(u, t, m); if (l) { lines.push(l); landed.push(t); } }
       if (t.hp <= 0) lines.push(...this.koLines(t));
     }
@@ -230,15 +236,16 @@ class PartyBattle {
   finish(result, lines) { this.result = result; this.phase = "end"; this.msgs.push(...lines.map(PBF.you)); this.after = () => { this.done = true; }; this.msgT = 0; }
   // --- input/update
   update(dt = 0) {
-    const ms = dt * 1000; this.t += ms; this.anim = (this.anim || 0) + ms;
+    const ms = dt * 1000; this.t += ms; this.anim = (this.anim || 0) + ms; this.drain(ms);
     if (this.phase === "msg" || this.phase === "end") {
-      this.msgT += ms; if (this.auto || Input.wasPressed("a") || this.msgT > 1600) { this.msgs.shift(); this.msgT = 0; }
+      this.msgT += ms; // v0.4.5: never auto-advances; Z/tap only, after minMs and once the HP bars have drained
+      if (this.msgs.length && (this.auto || (this.msgReady() && Input.wasPressed("a")))) { this.msgs.shift(); this.msgT = 0; }
       if (!this.msgs.length) { const f = this.after; this.after = null; if (this.phase !== "end") this.phase = "busy"; if (f) f(); }
       return;
     }
     if (this.phase === "press") {
       if (Input.wasPressed("a") && this.pressAt == null) this.pressAt = this.t;
-      const P = PB().press, k = this.wide ? P.wideMult : 1;
+      const P = PB().press, k = (this.wide ? P.wideMult : 1) * (this.easy ? P.easy.mult : 1); // v0.4.5 fix: Easy late window matches grading
       if (this.pressAt != null || this.t > this.cue + P.good * k) this.endPress();
       return;
     }
@@ -256,6 +263,14 @@ class PartyBattle {
       if (n && (Input.wasPressed("left") || Input.wasPressed("up"))) this.tsel = (this.tsel + n - 1) % n; if (n && (Input.wasPressed("right") || Input.wasPressed("down"))) this.tsel = (this.tsel + 1) % n;
       if (Input.wasPressed("a")) this.choose(this.cmd, this.sub || 0, this.tsel); }
   }
+  // v0.4.5 HP bars drain to the new value (<= drainMs) so the damage can be seen landing
+  drain(ms) { const D = PB().pace; let busy = false;
+    for (const u of this.all().concat(this.bench)) { if (u.shown == null || this.auto) { u.shown = u.hp; continue; } if (u.shown === u.hp) continue;
+      const step = Math.max(D.drainMinPerSec, u.maxHp * 1000 / D.drainMs) * ms / 1000;
+      u.shown = u.shown > u.hp ? Math.max(u.hp, u.shown - step) : Math.min(u.hp, u.shown + step); busy = true; }
+    if (busy) this.settle = PB().pace.settleMs; else if (this.settle > 0) this.settle -= ms; }
+  draining() { return this.all().concat(this.bench).some(u => u.shown != null && u.shown !== u.hp) || this.settle > 0; }
+  msgReady() { return this.msgT >= PB().pace.minMs && !this.draining(); }
   targetList() { const u = this.actor, c = PB().layout.commands[this.cmd]; if (c === "Item") return this.alive(this.party); if (c === "Swap") return this.swapList(u);
     const m = PB().moves[c === "Attack" ? (u.isPlayer ? "strike" : u.moves[0]) : this.specialMoves(u)[this.sub || 0]]; if (m.support) return this.alive(this.party); return m.all ? [] : this.alive(this.enemies); }
   // --- layout (decided): party x40-300; enemies x400-690; 1-3 one row 96px; 4-5 front 96 (feet 430) + back 48 (feet 370), back drawn first
@@ -270,19 +285,20 @@ class PartyBattle {
   drawUnit(ctx, u, p, flip) {
     const s = p.size, f = Math.floor((this.anim || 0) / PB().frameMs) % 3, key = "ft_" + u.art + "_" + s + "_" + f;
     const sk = s >= 96 ? 96 : 48, sh = s >= 96 ? s / 4 : 16; if (!Sprites.draw(ctx, "shadow_" + sk, p.x - s / 2, p.feet - sh / 2, s, sh)) { ctx.fillStyle = "rgba(26,20,35,0.3)"; ctx.fillRect(p.x - s / 3, p.feet - 4, s * 2 / 3, 8); }
-    if (u.hp > 0) { const img = Sprites.get(key);
+    const hpS = u.shown != null ? u.shown : u.hp, fr = hpS / u.maxHp;
+    if (hpS > 0) { const img = Sprites.get(key);
       if (img) { ctx.save(); ctx.imageSmoothingEnabled = false; if (flip) { ctx.translate(p.x + s / 2, 0); ctx.scale(-1, 1); ctx.drawImage(img, 0, p.feet - s, s, s); } else ctx.drawImage(img, p.x - s / 2, p.feet - s, s, s); ctx.restore(); }
       else { ctx.fillStyle = u.boss ? "#e8322b" : u.side === "enemy" ? "#ff7a1a" : "#ffd400"; ctx.fillRect(p.x - s / 3, p.feet - s * 0.9, s * 2 / 3, s * 0.9); } }
-    const bw = s >= 96 ? 80 : 48, by = p.feet - s - 14; ctx.fillStyle = "#1a1423"; ctx.fillRect(p.x - bw / 2 - 1, by - 1, bw + 2, 8);
-    ctx.fillStyle = u.hp / u.maxHp > 0.5 ? "#8fe03a" : u.hp / u.maxHp > 0.2 ? "#ffd400" : "#e8322b"; ctx.fillRect(p.x - bw / 2, by, Math.round(bw * u.hp / u.maxHp), 6);
-    ctx.fillStyle = "#1a1423"; ctx.font = (s >= 96 ? 10 : 9) + "px monospace";
-    const back = p.row === "back", maxW = back ? PB().layout.back.labelW : bw + 8; // v0.4.1: back row = name only, shrink font to fit
-    let label = back ? u.name : u.name + " L" + u.level, nm = u.name; const fits = t => !ctx.measureText || !ctx.measureText(t) || ctx.measureText(t).width <= maxW || ctx.measureText(t).width === undefined;
-    if (back) for (let fs = 8; !fits(label) && fs >= PB().layout.back.minFont; fs--) ctx.font = fs + "px monospace";
-    while (!fits(label) && nm.length > 3) { nm = nm.slice(0, -1); label = back ? nm + "." : nm + ". L" + u.level; }
-    p.label = label; p.labelFont = ctx.font; const lw = (ctx.measureText && ctx.measureText(label) && ctx.measureText(label).width) || label.length * 6; ctx.fillStyle = "rgba(246,241,228,0.85)"; const lx = back ? p.x - lw / 2 : p.x - bw / 2; ctx.fillRect(lx - 2, by - 14, lw + 4, 12); ctx.fillStyle = "#1a1423"; ctx.fillText(label, lx, by - 4);
+    const bw = s >= 96 ? 80 : 48, by = p.feet - s - 14; ctx.fillStyle = "#1a1423"; ctx.fillRect(p.x - bw / 2 - 1, by - 1, bw + 2, 10);
+    ctx.fillStyle = fr > 0.5 ? "#8fe03a" : fr > 0.2 ? "#ffd400" : "#e8322b"; ctx.fillRect(p.x - bw / 2, by, Math.round(bw * fr), 8);
+    ctx.fillStyle = "#1a1423"; ctx.font = UI.font(s >= 96 ? "label" : "labelSmall", true); // v0.4.5 bigger labels
+    const back = p.row === "back", maxW = back ? PB().layout.back.labelW : PB().layout.frontLabelW; // v0.4.5: front labels capped so neighbours (82px apart) never overlap // v0.4.1: back row = name only, shrink font to fit
+    const nm0 = u.short || u.name; let label = back ? nm0 : nm0 + " L" + u.level, nm = nm0; /* v0.4.5.1 short battle labels (story/short_names.md) */ const fits = t => !ctx.measureText || !ctx.measureText(t) || ctx.measureText(t).width <= maxW || ctx.measureText(t).width === undefined;
+    if (back) for (let fs = UI.sizes.labelSmall; !fits(label) && fs >= PB().layout.back.minFont; fs--) ctx.font = "bold " + fs + "px monospace";
+    while (!fits(label) && nm.length > 3) { nm = nm.slice(0, -1).trimEnd(); label = back ? nm + "." : nm + ". L" + u.level; }
+    p.label = label; p.labelFont = ctx.font; const lw = (ctx.measureText && ctx.measureText(label) && ctx.measureText(label).width) || label.length * 6; ctx.fillStyle = "rgba(246,241,228,0.9)"; const lx = back ? p.x - lw / 2 : p.x - bw / 2, lh = parseInt(ctx.font.replace(/^bold /, "")) + 3; ctx.fillRect(lx - 2, by - lh - 2, lw + 4, lh); ctx.fillStyle = "#1a1423"; ctx.fillText(label, lx, by - 5);
     const S = PB().status, tags = Object.keys(u.st).filter(k => S[k]).map(k => S[k].tag).concat(u.pendingSkip ? ["CRG"] : [], u.numb > 0 ? ["NUMB"] : [], u.st.cheer ? ["CHR"] : [], u.st.guard ? ["GRD"] : []);
-    if (tags.length) { ctx.fillStyle = "#e8322b"; ctx.fillText(tags.join(" "), p.x - bw / 2, p.feet + 12); }
+    if (tags.length) { ctx.fillStyle = "#e8322b"; ctx.fillText(tags.join(" "), p.x - bw / 2, p.feet + 14); }
   }
   render(ctx) {
     const Lo = PB().layout; ctx.fillStyle = "#c49a6c"; ctx.fillRect(0, 0, 720, 528); Sprites.draw(ctx, "bg_" + (this.group.bg || "drop_day"), 0, 0, 720, 528);
@@ -293,18 +309,22 @@ class PartyBattle {
       if (img) { ctx.save(); ctx.imageSmoothingEnabled = false; ctx.translate(690, 0); ctx.scale(-1, 1); ctx.drawImage(img, 0, 236, 96, 96); ctx.restore(); } else { ctx.fillStyle = "#3fa34d"; ctx.fillRect(610, 250, 64, 82); } }
     this.party.forEach((u, i) => this.drawUnit(ctx, u, lay.party[i], false));
     if (this.phase === "target") { const L = this.targetList(), t = L[this.tsel]; if (t) { const all = this.party.concat(this.enemies), lp = this.party.includes(t) ? lay.party[this.party.indexOf(t)] : this.enemies.includes(t) ? lay.enemies[this.enemies.indexOf(t)] : null;
-      if (!lp) { UI.frame(ctx, 300, 330, 240, 24 + L.length * 22); ctx.fillStyle = UI.textColor(); ctx.font = "15px monospace"; L.forEach((b, i) => ctx.fillText((i === this.tsel ? "> " : "  ") + b.name + " " + b.hp + "/" + b.maxHp, 314, 350 + i * 22)); } else {
+      if (!lp) { const lh = UI.sizes.menu + 8; UI.frame(ctx, 250, 436 - 28 - L.length * lh, 340, 28 + L.length * lh); ctx.fillStyle = UI.textColor(); ctx.font = UI.font("menu"); L.forEach((b, i) => ctx.fillText((i === this.tsel ? "> " : "  ") + b.name + " " + b.hp + "/" + b.maxHp, 266, 436 - 14 - (L.length - 1 - i) * lh - 6)); } else {
       ctx.fillStyle = "#ffd400"; ctx.beginPath(); ctx.moveTo(lp.x - 8, lp.feet - lp.size - 34); ctx.lineTo(lp.x + 8, lp.feet - lp.size - 34); ctx.lineTo(lp.x, lp.feet - lp.size - 22); ctx.fill(); } } }
-    if (this.phase === "press") { const P = PB().press, d = this.t - this.cue, on = Math.abs(d) <= P.good * (this.wide ? 2 : 1);
-      ctx.fillStyle = on ? "#ffd400" : "rgba(255,255,255,0.6)"; ctx.font = "bold 28px monospace"; ctx.fillText(d < -P.good ? "..." : "Z!", 336, 300);
+    if (this.phase === "press") { const P = PB().press, k = (this.wide ? P.wideMult : 1) * (this.easy ? P.easy.mult : 1), d = this.t - this.cue, on = Math.abs(d) <= P.good * k;
+      UI.frame(ctx, 20, 12, 680, 64); ctx.fillStyle = UI.textColor(); ctx.font = UI.font("battle"); ctx.fillText(T(this.pressKind === "block" ? "pbPressBlock" : "pbPressAttack"), 40, 52);
+      ctx.fillStyle = on ? "#ffd400" : "rgba(255,255,255,0.6)"; ctx.font = "bold 40px monospace"; ctx.fillText(d < -P.good * k ? "..." : "Z!", 330, 200);
       if (window.Debug && Debug.open) { ctx.font = "12px monospace"; ctx.fillText("cue " + this.cue + "ms t " + Math.round(this.t), 300, 320); } }
     // command bar y446-528
-    ctx.fillStyle = "#1a1423"; ctx.fillRect(0, Lo.bar.y, 720, Lo.bar.h); ctx.fillStyle = "#f6f1e4"; ctx.font = "16px monospace";
-    const u = this.actor; ctx.fillText((u && u.side === "party" && this.phase !== "msg" ? u.name : "") + "  STA " + this.stamina + "/" + PB().stamina.cap + "  Potions " + (this.game.inventory.items.potion || 0), 20, Lo.bar.y + 24);
-    Lo.commands.forEach((c, i) => { const x = 20 + i * 140, sel = this.phase === "command" && i === this.cmd; if (sel) { ctx.fillStyle = "#ffd400"; ctx.fillRect(x - 6, Lo.bar.y + 38, c.length * 10 + 12, 26); }
-      ctx.fillStyle = sel ? "#1a1423" : (this.phase === "command" ? "#f6f1e4" : "#6b5a7a"); ctx.fillText(c, x, Lo.bar.y + 57); });
-    if (this.phase === "sub") { UI.frame(ctx, 170, 330, 200, 80); ctx.fillStyle = UI.textColor(); this.specialMoves(u).forEach((m, i) => ctx.fillText((i === this.sub ? "> " : "  ") + PB().moves[m].name, 186, 362 + i * 24)); }
-    if (this.msgs.length) { UI.frame(ctx, 20, 16, 680, 64); ctx.fillStyle = UI.textColor(); ctx.font = "15px monospace"; UI.wrap(ctx, this.msgs[0], 640).slice(0, 2).forEach((l, i) => ctx.fillText(l, 40, 42 + i * 20)); }
+    ctx.fillStyle = "#1a1423"; ctx.fillRect(0, Lo.bar.y, 720, Lo.bar.h); ctx.fillStyle = "#f6f1e4"; ctx.font = UI.font("barSmall");
+    const u = this.actor; ctx.fillText((u && u.side === "party" && this.phase !== "msg" ? u.name : "") + "  STA " + this.stamina + "/" + PB().stamina.cap + "  Potions " + (this.game.inventory.items.potion || 0), 20, Lo.bar.y + 26); ctx.font = UI.font("menu", true);
+    Lo.commands.forEach((c, i) => { const x = 20 + i * 140, sel = this.phase === "command" && i === this.cmd; if (sel) { ctx.fillStyle = "#ffd400"; ctx.fillRect(x - 6, Lo.bar.y + 36, UI.textW(ctx, c) + 12, 32); }
+      ctx.fillStyle = sel ? "#1a1423" : (this.phase === "command" ? "#f6f1e4" : "#8a7a9a"); ctx.fillText(c, x, Lo.bar.y + 60); });
+    if (this.phase === "sub") { const lh = UI.sizes.menu + 10; UI.frame(ctx, 150, 436 - 30 - 2 * lh, 300, 30 + 2 * lh); ctx.fillStyle = UI.textColor(); ctx.font = UI.font("menu"); this.specialMoves(u).forEach((m, i) => ctx.fillText((i === this.sub ? "> " : "  ") + PB().moves[m].name, 168, 436 - 22 - (1 - i) * lh)); }
+    // v0.4.5 message box: bigger text, up to 3 lines, arrow when Z/tap will advance (it never advances on its own)
+    if (this.msgs.length) { ctx.font = UI.font("battle"); const L = UI.wrap(ctx, this.msgs[0], 636).slice(0, 3), lh = UI.sizes.battle + 7, h = 30 + L.length * lh;
+      UI.frame(ctx, 20, 12, 680, h); ctx.fillStyle = UI.textColor(); L.forEach((l, i) => ctx.fillText(l, 40, 12 + 14 + UI.sizes.battle + i * lh));
+      if (this.msgReady() && Math.floor(this.anim / 400) % 2 === 0) { ctx.font = UI.font("arrow"); ctx.fillText("▶", 672, 12 + h - 12); } }
   }
 }
 Object.assign(window, { PartyBattle, PBF });

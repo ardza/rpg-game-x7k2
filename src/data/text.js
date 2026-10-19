@@ -36,6 +36,8 @@ GAME_DATA.text = {
   unboxer_enter: "This video is NOT sponsored. (It's sponsored.)", unboxer_ko: "Mom said it's not a real job!",
   pbSwap: "Tag out! {out} to the bench, {in} takes the shot.", pbSwapNone: "Bench is empty. Nobody wants this collab.", pbSwapPlayer: "You can't bench yourself. You're the main character.", // v0.4.1 swap lines (Story Writer)
   // [writer] v0.4.0 party battle system lines (story/battle_text.md)
+  pbPressAttack: "Timing! Press Z when it flashes.",                                 // v0.4.5 Battle Timing on (placeholder, Story Writer can swap)
+  pbPressBlock: "Incoming! Press Z when it flashes to block.",                       // v0.4.5
   pbStart: "{n} wants smoke!",
   pbWin: "W. +{coins} coins, +{xp} XP.",
   pbLose: "Lights out. Mom dragged you home. Again.",

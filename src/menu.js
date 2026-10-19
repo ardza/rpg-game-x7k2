@@ -18,7 +18,8 @@ const CardDraw = {
   }
 };
 class PauseMenu {
-  constructor(game) { this.game = game; this.options = ["Binder", "Bag", "Shop", "Save", "Touch Controls", "Reset Game", "Close"]; // v0.4.4: Touch Controls Auto/On/Off
+  static get FRAME() { return { x: 300, y: 20, w: 400, h: 464 }; } // v0.4.5 (was 400,20,240,440)
+  constructor(game) { this.game = game; this.options = ["Binder", "Bag", "Shop", "Save", "Touch Controls", "Battle Timing", "Reset Game", "Close"]; // v0.4.4: Touch Controls Auto/On/Off
     if (window.DEV_CHEATS && window.DevCheats) this.options.splice(4, 0, DevCheats.label); // DEV-CHEATS
     this.idx = 0; this.view = "root"; this.msg = ""; this.closed = false; this.sel = 0; }
   update(dt = 0) {
@@ -61,10 +62,12 @@ class PauseMenu {
     if (Input.wasPressed("down")) this.idx = (this.idx + 1) % n;
     if (Input.wasPressed("b") || Input.wasPressed("menu")) { this.closed = true; return; }
     if (this.options[this.idx] === "Touch Controls" && (Input.wasPressed("left") || Input.wasPressed("right"))) { this.cycleTouch(Input.wasPressed("left") ? -1 : 1); return; }
+    if (this.options[this.idx] === "Battle Timing" && (Input.wasPressed("left") || Input.wasPressed("right"))) { this.cycleTiming(Input.wasPressed("left") ? -1 : 1); return; }
     if (Input.wasPressed("a")) {
       const o = this.options[this.idx];
       if (o === "Close") this.closed = true;
       else if (o === "Touch Controls") { this.cycleTouch(1); return; }
+      else if (o === "Battle Timing") { this.cycleTiming(1); return; }
       else if (o === "Reset Game") { this.confirm = { kind: "reset", choice: 1 /* No */ }; this.msg = ""; return; }
       else if (window.DEV_CHEATS && o === DevCheats.label) { this.cheat = new CheatInput(this); return; } // DEV-CHEATS
       else if (o === "Save") { this.view = "msg"; this.msg = Save.save(g) ? T("saved") : T("saveFailed"); }
@@ -74,7 +77,11 @@ class PauseMenu {
   // v0.4.4: Auto (touch devices only) / On / Off; saved in settings (save format stays v5).
   touchMode() { const m = this.game.settings.touchControls; return Touch.modes.includes(m) ? m : "auto"; }
   cycleTouch(d) { const M = Touch.modes, g = this.game; g.settings.touchControls = M[(M.indexOf(this.touchMode()) + d + M.length) % M.length]; Touch.apply(g.settings.touchControls); Save.setPref("touchControls", g.settings.touchControls); Save.save(g); }
-  optionLabel(o) { return o === "Touch Controls" ? "Touch Controls: " + ({ auto: "Auto", on: "On", off: "Off" })[this.touchMode()] : o; }
+  // v0.4.5 Battle Timing: Off (default, no timing step, flat damage) / Easy / Normal. Saved with the game.
+  timingMode() { const m = this.game.settings.battleTiming; return PartyBattle.TIMINGS.includes(m) ? m : "off"; }
+  cycleTiming(d) { const M = PartyBattle.TIMINGS, g = this.game; g.settings.battleTiming = M[(M.indexOf(this.timingMode()) + d + M.length) % M.length]; Save.save(g); }
+  optionLabel(o) { if (o === "Battle Timing") return "Battle Timing: " + ({ off: "Off", easy: "Easy", normal: "Normal" })[this.timingMode()];
+    return o === "Touch Controls" ? "Touch Controls: " + ({ auto: "Auto", on: "On", off: "Off" })[this.touchMode()] : o; }
   requestOpen(tier) { this.confirm = { tier, choice: 1 /* No */ }; this.msg = ""; }
   openPack(tier) { const r = Packs.open(this.game, tier); if (r.ok) { this.pack = new PackOpenScreen(this.game, tier, r.cards); this.msg = ""; } return r; }
   // binder_page_720x528: 4x2 pockets 130x186 at x=90+150c, y=50+230r. 8 cards per page; frame fallback when the page is missing.
@@ -141,19 +148,20 @@ class PauseMenu {
     if (this.msg) { ctx.font = "12px monospace"; UI.wrap(ctx, this.msg, W - 50).forEach((l, i) => ctx.fillText(l, X + 24, Y + 268 - 16 + i * 15 - (UI.wrap(ctx, this.msg, W - 50).length - 1) * 15)); }
   }
   renderConfirm(ctx) { const c = this.confirm;
-    UI.frame(ctx, 160, 200, 400, 130); ctx.fillStyle = UI.textColor(); ctx.font = "16px monospace";
-    ctx.font = "14px monospace"; UI.wrap(ctx, c.kind === "reset" ? T("resetConfirm") : T("packConfirm", { pack: GAME_DATA.packs[c.tier].name }), 350).forEach((l, i) => ctx.fillText(l, 184, 232 + i * 18)); ctx.font = "16px monospace";
-    ["Yes", "No"].forEach((o, i) => ctx.fillText((i === c.choice ? "> " : "  ") + o, 200, 292 + i * 22)); }
+    ctx.font = UI.font("menu"); const lh = UI.sizes.menu + 8, W = UI.wrap(ctx, c.kind === "reset" ? T("resetConfirm") : T("packConfirm", { pack: GAME_DATA.packs[c.tier].name }), 452), h = 40 + W.length * lh + 2 * lh + 10, y = 264 - h / 2;
+    UI.frame(ctx, 110, y, 500, h); ctx.fillStyle = UI.textColor(); W.forEach((l, i) => ctx.fillText(l, 134, y + 20 + UI.sizes.menu + i * lh)); // v0.4.5 bigger text
+    ["Yes", "No"].forEach((o, i) => ctx.fillText((i === c.choice ? "> " : "  ") + o, 150, y + 30 + UI.sizes.menu + (W.length + i) * lh)); }
   render(ctx) {
     if (this.pack) return this.pack.render(ctx);
-    if (this.cheat) { UI.frame(ctx, 400, 20, 240, 440); return this.cheat.render(ctx); } // DEV-CHEATS
-    if (this.confirm) { const v = this.view; (v === "binder" ? this.renderBinder(ctx) : UI.frame(ctx, 400, 20, 240, 440)); return this.renderConfirm(ctx); }
+    const F = PauseMenu.FRAME; // v0.4.5: wider frame for the bigger menu text
+    if (this.cheat) { UI.frame(ctx, F.x, F.y, F.w, F.h); return this.cheat.render(ctx); } // DEV-CHEATS
+    if (this.confirm) { const v = this.view; (v === "binder" ? this.renderBinder(ctx) : UI.frame(ctx, F.x, F.y, F.w, F.h)); return this.renderConfirm(ctx); }
     if (this.view === "binder") return this.renderBinder(ctx);
     if (this.view === "shop") return this.renderShop(ctx);
-    UI.frame(ctx, 400, 20, 240, 440); ctx.fillStyle = UI.textColor(); ctx.font = "16px monospace";
-    if (this.view === "root") { this.options.forEach((o, i) => ctx.fillText((i === this.idx ? "> " : "  ") + this.optionLabel(o), 424, 64 + i * 28)); ctx.fillText(T("coins", { n: this.game.inventory.money }), 424, 430); }
-    else if (this.view === "bag") { const l = this.game.inventory.list(); ctx.fillText(T("coins", { n: this.game.inventory.money }), 410, 60); l.forEach((it, i) => ctx.fillText((i === this.sel ? "> " : "  ") + it.name + " x" + it.n, 410, 88 + i * 24)); if (l.some(it => /^pack_/.test(it.id))) { ctx.font = "12px monospace"; ctx.fillText("Z on a pack: open it", 410, 430); } }
-    else ctx.fillText(this.msg, 410, 60);
+    UI.frame(ctx, F.x, F.y, F.w, F.h); ctx.fillStyle = UI.textColor(); ctx.font = UI.font("menu"); const lh = UI.sizes.menu + 12, x0 = F.x + 24, yb = F.y + F.h - 26;
+    if (this.view === "root") { this.options.forEach((o, i) => ctx.fillText((i === this.idx ? "> " : "  ") + this.optionLabel(o), x0, F.y + 20 + UI.sizes.menu + i * lh)); ctx.fillText(T("coins", { n: this.game.inventory.money }), x0, yb); }
+    else if (this.view === "bag") { const l = this.game.inventory.list(); ctx.fillText(T("coins", { n: this.game.inventory.money }), x0, F.y + 20 + UI.sizes.menu); l.forEach((it, i) => ctx.fillText((i === this.sel ? "> " : "  ") + it.name + " x" + it.n, x0, F.y + 20 + UI.sizes.menu + (i + 1) * lh)); if (l.some(it => /^pack_/.test(it.id))) { ctx.font = UI.font("small"); ctx.fillText("Z on a pack: open it", x0, yb); } }
+    else UI.wrap(ctx, this.msg || "", F.w - 48).forEach((l, i) => ctx.fillText(l, x0, F.y + 20 + UI.sizes.menu + i * lh));
   }
 }
 Object.assign(window, { PauseMenu, CardDraw });
