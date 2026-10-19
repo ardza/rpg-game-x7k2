@@ -31,6 +31,14 @@ const UI = {
   header(ctx, x, y, w, label) { if (!this.holo()) return 0; const img = Sprites.get("ui_holo_header"), c = 8, h = 24;
     if (img) { ctx.imageSmoothingEnabled = false; ctx.drawImage(img, 0, 0, c, h, x, y, c, h); ctx.drawImage(img, c, 0, img.width - 2 * c, h, x + c, y, w - 2 * c, h); ctx.drawImage(img, img.width - c, 0, c, h, x + w - c, y, c, h); }
     const f = ctx.fillStyle, fo = ctx.font; ctx.fillStyle = this.H.accent; ctx.font = this.font("label", true); ctx.fillText(label, x + 12, y + 17); ctx.fillStyle = f; ctx.font = fo; return h; },
+  // v0.4.7 dialog name tag: small holo tab on top of the box (GAME_DATA.world.nameTag). Returns its rect (tests).
+  nameTag(ctx, x, y, name) { const N = GAME_DATA.world.nameTag, t = String(name).toUpperCase(), f = ctx.fillStyle, fo = ctx.font;
+    ctx.font = "bold " + N.font + "px monospace"; const w = Math.ceil(this.textW(ctx, t)) + 2 * N.padX, h = N.h, H = this.holo();
+    ctx.fillStyle = H ? this.H.glass : "#1a1423"; ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = H ? this.H.accent : "#f6f1e4"; ctx.lineWidth = 2; ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
+    if (H) this.scan(ctx, x + 2, y + 2, w - 4, h - 4);
+    ctx.fillStyle = H ? this.H.accent : "#f6f1e4"; ctx.fillText(t, x + N.padX, y + Math.round(h / 2 + N.font * 0.36)); ctx.fillStyle = f; ctx.font = fo;
+    return { x, y, w, h, text: t }; },
   // open blip: ~120ms fade/scale-in, render-only (input is never blocked). Restarts when a box hasn't been drawn for 100ms.
   blipMs: 120, _seen: {},
   blip(key) { const now = (window.performance && performance.now()) || Date.now(); let s = this._seen[key]; if (!s || now - s.last > 100) s = this._seen[key] = { t0: now }; s.last = now; return Math.min(1, (now - s.t0) / this.blipMs); },

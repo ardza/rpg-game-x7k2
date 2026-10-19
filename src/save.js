@@ -13,7 +13,7 @@ const Save = {
       packsOpened: Object.assign({}, game.packsOpened), pityCounter: game.pityCounter, commonsTradedIn: game.commonsTradedIn, packsTradedIn: game.packsTradedIn | 0,
       hiddenFound: game.hiddenFound.slice(), defeatedGroups: game.defeatedGroups.slice(),
       flags: Object.assign({}, game.flags), settings: Object.assign({}, game.settings),
-      playMs: Math.floor(game.playMs || 0), coinsFound: (game.coinsFound || []).slice(), jobs: Object.assign({}, game.jobs) }; // v5 (v0.4.4)
+      playMs: Math.floor(game.playMs || 0), coinsFound: (game.coinsFound || []).slice(), jobs: Object.assign({}, game.jobs), roomGrid: GAME_DATA.world.roomGrid }; // v5 (v0.4.4); roomGrid v0.4.7
   },
   valid(d) {
     const num = v => typeof v === "number" && isFinite(v) && v >= 0;
@@ -43,6 +43,9 @@ const Save = {
     if (d.version === 4) d = Object.assign({}, d, { version: 5, playMs: 0, coinsFound: [], jobs: { mowDay: null, extraAt: null } });
     if (d.version !== 5) return d;
     if (d.settings && typeof d.settings === "object") { d.settings = Object.assign({}, d.settings); delete d.settings.battleTiming; delete d.settings.wideWindows; }
+    // v0.4.7: rooms went 15x11 -> 11x8. A save made inside a room on another grid (v0.4.6 saves have no roomGrid) lands on that room's spawn.
+    const pm = d.player && d.player.pos && GAME_DATA.maps[d.player.pos.map];
+    if (pm && pm.room && d.roomGrid !== GAME_DATA.world.roomGrid) { d.player = Object.assign({}, d.player, { pos: { map: d.player.pos.map, x: pm.spawn.x, y: pm.spawn.y } }); d.roomMapped = true; }
     const RL = GAME_DATA.rarityLegacy, fix = e => e && typeof e === "object" && typeof e.rarity === "string" && !GAME_DATA.rarities[e.rarity] && RL[e.rarity] ? Object.assign({}, e, { rarity: RL[e.rarity] }) : e;
     if (Array.isArray(d.collection)) d.collection = d.collection.map(fix);
     return d;

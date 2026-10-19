@@ -1,0 +1,70 @@
+{
+ "tileSize": 64,
+ "columns": 44,
+ "cells": [
+  "grass",
+  "path",
+  "tall_grass",
+  "house_wall",
+  "house_roof",
+  "shed",
+  "fence",
+  "card_sparkle",
+  "shop_door",
+  "path_edge_n",
+  "path_edge_s",
+  "path_edge_e",
+  "path_edge_w",
+  "path_corner_nw",
+  "path_corner_ne",
+  "path_corner_sw",
+  "path_corner_se",
+  "roof_edge_left",
+  "roof_edge_right",
+  "roof_eave",
+  "roof_ridge",
+  "house_door",
+  "house_door_mat",
+  "tall_grass_b",
+  "tall_grass_edge_n",
+  "house2_roof",
+  "house2_wall",
+  "house2_window",
+  "house2_door",
+  "house_wall_window",
+  "cafe_awning",
+  "cafe_sign_l",
+  "cafe_sign_r",
+  "cafe_window",
+  "cafe_door",
+  "tower_top",
+  "tower_windows",
+  "tower_sign",
+  "tower_door",
+  "path_v",
+  "path_h",
+  "path_exit_arrow",
+  "soon_barrier",
+  "soon_sign"
+ ],
+ "note": "same cell order/indices as tileset_48.png; drop-in with tileSize 64. path_v/path_h/path_exit_arrow have baked-in circuit traces (w+e / n+s).",
+ "extra": {
+  "sign_64.png": "decor sign",
+  "gig_cam_64.png": "decor gig cam",
+  "path_trace_<n|s|e|w>_64.png": "optional overlay on a plain path tile whose n/s/e/w neighbour is grass; already baked into path_v/path_h"
+ },
+ "bakedCircuits": {
+  "path_v": [
+   "w",
+   "e"
+  ],
+  "path_h": [
+   "n",
+   "s"
+  ],
+  "path_exit_arrow": [
+   "w",
+   "e"
+  ]
+ }
+}

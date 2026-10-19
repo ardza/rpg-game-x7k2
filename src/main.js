@@ -65,11 +65,11 @@ class Game {
       return this.sayLines(["job_mow_start"], () => { this.fadeMs = 600; this.jobs.mowDay = this.today(); this.inventory.addMoney(J.mow.pay); this.say("job_mow_done", null); Save.save(this); }, d.bust || null); }
     if (d.job === "extra") { const left = this.jobs.extraAt == null ? 0 : J.extra.cooldownMs - (this.playMs - this.jobs.extraAt);
       if (left > 0) { this.talk = T("gig_extra_wait", { m: Math.ceil(left / 60000) }); this.talkBust = null; return; }
-      return this.sayLines(["gig_extra_start", "gig_extra_hold"], () => { this.gig = { x: this.player.x, y: this.player.y, facing: this.player.facing, t: 0 }; }); } }
+      return this.sayLines(["gig_extra_start", "gig_extra_hold"], () => { this.gig = { x: this.player.x, y: this.player.y, facing: this.player.facing, t: 0, name: d.name || null }; }); } }
   updateGig(dt) { const g = this.gig, p = this.player; if (!g) return false;
-    if (p.moving || p.x !== g.x || p.y !== g.y || p.facing !== g.facing || ["up", "down", "left", "right"].some(k => Input.isDown(k))) { this.gig = null; this.say("gig_extra_cancel", null); return true; }
+    if (p.moving || p.x !== g.x || p.y !== g.y || p.facing !== g.facing || ["up", "down", "left", "right"].some(k => Input.isDown(k))) { const nm = g.name; this.gig = null; this.say("gig_extra_cancel", null); this.talkName = nm; return true; }
     g.t += dt * 1000; if (g.t < GAME_DATA.jobs.extra.holdMs) return true;
-    this.gig = null; this.jobs.extraAt = this.playMs; this.inventory.addMoney(GAME_DATA.jobs.extra.pay); this.say("gig_extra_done", null); Save.save(this); return true; }
+    this.gig = null; this.jobs.extraAt = this.playMs; this.inventory.addMoney(GAME_DATA.jobs.extra.pay); this.say("gig_extra_done", null); this.talkName = g.name; Save.save(this); return true; }
   // goon markers wander in their patch (never onto the player, solids, other decor); fights are Z-only
   wanderGoons() { const W = this.map.def.goonWander; if (!W || this.map.def.room) return; this.goonSteps = (this.goonSteps | 0) + 1; if (this.goonSteps % W.everySteps) return;
     for (const d of this.map.def.decor || []) { if (!d.group || this.map.gone(d)) continue; d.home = d.home || { x: d.x, y: d.y };
@@ -111,11 +111,12 @@ class Game {
       if (this.fadeMs > 0) { this.fadeMs -= dt * 1000; return; } // v0.4.4 mow fade-to-black
       if (this.talk) { if (Input.wasPressed("a") || Input.wasPressed("b")) { this.talk = null;
         if (this.talkQueue && this.talkQueue.length) { this.talk = T(this.talkQueue.shift()); return; } this.talkBust = null;
-        const f = this.talkThen; this.talkThen = null; if (f) f(); } return; }
+        const f = this.talkThen, nm = this.talkName; this.talkThen = null; this.talkName = null; const tw = this.talkWith; this.talkWith = null; if (f) { f(); if (this.talk && this.state === "overworld") { this.talkName = nm; this.talkWith = tw; } } } return; } // same speaker keeps the tag (mow done)
       if (this.gig && this.updateGig(dt)) return;
       if (Input.wasPressed("menu") || (Input.wasPressed("b") && !this.player.moving)) { this.menu = new PauseMenu(this); this.setState("menu"); return; }
       if (!this.player.moving && Input.wasPressed("a")) { // talk to decor / search the tile the player faces
         const [dx, dy] = DIRS[this.player.facing], fx = this.player.x + dx, fy = this.player.y + dy;
+        const spk = (this.map.def.decor || []).find(d => d.name && ((d.x === fx && d.y === fy) || (d.reach || []).some(r => r[0] === fx && r[1] === fy))); this.talkName = spk ? spk.name : null; this.talkWith = spk || null; // v0.4.7 name tag + keep the speaker visible
         const h = this.hiddenAt(fx, fy, "search"); if (h) return this.pickUp(h);
         const door = (this.map.def.doors || []).find(d => d.x === fx && d.y === fy); if (door) return this.enterDoor(door);
         const npc = (this.map.def.decor || []).find(d => d.opens && ((d.x === fx && d.y === fy) || (d.reach || []).some(r => r[0] === fx && r[1] === fy)));
@@ -166,11 +167,17 @@ class Game {
     }
   }
   momWalking() { return this.momT < GAME_DATA.momWalkIn.ms; }
+  // v0.4.7 Mom's walk-in along momWalkIn.path (tile waypoints, even speed); row from the segment direction, endRow once she's there
+  momPos() { const W = GAME_DATA.momWalkIn, P = W.path || [[W.from.x, W.from.y], [W.to.x, W.to.y]], R = GAME_DATA.world.person.rows, len = (a, b) => Math.max(Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1]));
+    const total = P.reduce((s0, p, i) => i ? s0 + len(P[i - 1], p) : 0, 0); let d = Math.min(1, this.momT / W.ms) * total;
+    if (d >= total) { const e = P[P.length - 1]; return { x: e[0], y: e[1], row: W.endRow ?? W.row, done: true }; }
+    for (let i = 1; i < P.length; i++) { const a = P[i - 1], b = P[i], l = len(a, b); if (d <= l) { const t = l ? d / l : 1, dx = b[0] - a[0], dy = b[1] - a[1];
+        return { x: a[0] + dx * t, y: a[1] + dy * t, row: Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? R.left : R.right) : (dy < 0 ? R.up : R.down) }; } d -= l; }
+  }
   renderIntro(ctx) { // v0.3.5: the bedroom itself, Mom walking in from the door, then her lines with her (or Dad's) bust
-    this.renderWorld(ctx);
-    const W = GAME_DATA.momWalkIn, k = Math.min(1, this.momT / W.ms), mx = (W.from.x + (W.to.x - W.from.x) * k) * TILE, my = (W.from.y + (W.to.y - W.from.y) * k) * TILE;
+    const W = GAME_DATA.momWalkIn, mp = this.momPos(), mx = mp.x * TILE, my = mp.y * TILE;
     const col = this.momWalking() ? [0, 1, 2, 1][Math.floor(this.momT / 120) % 4] : 1;
-    if (!Sprites.draw(ctx, W.sprite, mx, my, TILE, TILE, col * W.cell, W.row * W.cell, W.cell, W.cell)) { ctx.fillStyle = "#ff3e8a"; ctx.fillRect(mx + 8, my + 4, TILE - 16, TILE - 8); }
+    this.renderWorld(ctx, [{ sortY: Math.ceil(mp.y), pri: 1, id: "mom_intro", draw: (cx, cy) => TileMap.drawPerson(ctx, W.sprite, mx - cx, my - cy, col, mp.row, "#ff3e8a") }]);
     if (!this.notice && this.momWalking()) return;
     if (!this.notice) { const L0 = GAME_DATA.momIntro[Math.min(this.introIdx, GAME_DATA.momIntro.length - 1)], bust = /^DAD/.test(L0.who) ? "dad_bust" : "mom_bust";
       const n0 = (ctx.font = UI.font("dialog"), UI.wrap(ctx, "\"" + L0.line + "\"", 636).length), by0 = 20 + 72 + n0 * (UI.sizes.dialog + 8) + 6;
@@ -184,34 +191,56 @@ class Game {
     ctx.font = UI.font("dialog"); WL.forEach((l, i) => ctx.fillText(l, 44, 56 + lh + 4 + i * lh));
     UI.arrow(ctx, 668, 20 + h - 14); // v0.4.3: arrow only (Z still advances)
   }
-  renderWorld(ctx) {
-    const camX = Math.max(0, Math.min(this.player.px + TILE / 2 - this.canvas.width / 2, this.map.width * TILE - this.canvas.width));
-    const camY = Math.max(0, Math.min(this.player.py + TILE / 2 - this.canvas.height / 2, this.map.height * TILE - this.canvas.height));
-    this.map.render(ctx, camX, camY); this.map.renderDecor(ctx, camX, camY); this.renderHidden(ctx, camX, camY);
-    for (const c of this.map.def.coins || []) if (!this.coinsFound.includes(c.id)) { const x = c.x * TILE - camX, y = c.y * TILE - camY; // Couch Cash sparkle
-      if (!Sprites.draw(ctx, "ui_coin", x + 12, y + 16, 24, 24)) { ctx.fillStyle = "#e8b530"; ctx.fillRect(x + 16, y + 20, 16, 16); }
-      if (TileSet.ready) { const ts = TileSet.def.tileSize, f = GAME_DATA.cardSparkleFrame; ctx.drawImage(TileSet.img, (f % TileSet.def.columns) * ts, 0, ts, ts, x, y, TILE, TILE); } }
+  camera() { const cw = this.canvas.width, ch = this.canvas.height, mw = this.map.width * TILE, mh = this.map.height * TILE;
+    if (this.map.def.room && mw <= cw && mh <= ch) return { camX: (mw - cw) / 2, camY: (mh - ch) / 2 }; // v0.4.7: 704x512 room centred (8px margin), no scroll
+    return { camX: Math.max(0, Math.min(this.player.px + TILE / 2 - cw / 2, this.map.width * TILE - cw)), camY: Math.max(0, Math.min(this.player.py + TILE / 2 - ch / 2, this.map.height * TILE - ch)) }; }
+  // v0.4.7: ground pass, then one y-sorted pass (buildings, decor/NPCs, markers, coins, player) so the player walks behind roofs
+  renderWorld(ctx, extra = []) {
+    const { camX, camY } = this.camera(), WD = GAME_DATA.world; this.lastCam = { camX, camY };
+    this.map.render(ctx, camX, camY);
     if (GAME_DATA.legacyCombat && this.roamers) this.roamers.render(ctx, camX, camY);
-    this.player.render(ctx, camX, camY);
+    const items = extra.map(e => Object.assign({ kind: "fn" }, e, { draw: () => e.draw(camX, camY) }));
+    for (const h of this.map.def.hidden || []) if (h.kind === "plain" && !this.hiddenFound.includes(h.id)) items.push({ kind: "fn", sortY: h.y, pri: 1, id: "hidden_" + h.id, draw: () => this.drawHidden(ctx, h, camX, camY) });
+    for (const c of this.map.def.coins || []) if (!this.coinsFound.includes(c.id)) items.push({ kind: "fn", sortY: c.y, pri: 1, id: "coin_" + c.id, draw: () => this.drawCoin(ctx, c, camX, camY) });
+    items.push({ kind: "fn", sortY: this.player.sortRow(), pri: 2, id: "player", draw: () => this.player.render(ctx, camX, camY) });
+    const order = this.map.drawables(items); this.lastDrawOrder = order.map(it => it.kind === "building" ? "bld_" + it.b.id : it.kind === "decor" ? "decor_" + it.d.id : it.id);
+    for (const it of order) { if (it.kind === "building") this.map.drawBuilding(ctx, it.b, camX, camY); else if (it.kind === "decor") this.map.drawDecor(ctx, it.d, camX, camY); else it.draw(); }
   }
-  renderHidden(ctx, camX, camY) {
-    for (const h of this.map.def.hidden || []) if (h.kind === "plain" && !this.hiddenFound.includes(h.id)) {
-      const x = h.x * TILE - camX, y = h.y * TILE - camY;
-      if (!Sprites.draw(ctx, "cardmap_" + h.cardId, x, y, TILE, TILE)) { ctx.fillStyle = "#1a1423"; ctx.fillRect(x + 14, y + 10, 20, 28); ctx.fillStyle = GAME_DATA.cards[h.cardId].color; ctx.fillRect(x + 16, y + 12, 16, 24); }
-      if (TileSet.ready) { const ts = TileSet.def.tileSize, f = GAME_DATA.cardSparkleFrame; ctx.drawImage(TileSet.img, (f % TileSet.def.columns) * ts, 0, ts, ts, x, y, TILE, TILE); }
-      else { ctx.fillStyle = "#fff"; ctx.fillRect(x + 18, y + 14, 4, 4); }
-    }
-  }
+  // v0.4.7: rects (screen px) the open dialog must not cover: the player and the person they're talking to (64x80 sprites)
+  talkFocus() { const c = this.lastCam || this.camera(), P = GAME_DATA.world.person, r = [{ x: this.player.px - c.camX, y: this.player.py - P.lift - c.camY, w: P.w, h: P.h }];
+    const d = this.talkWith; if (d && this.map.def.decor && this.map.def.decor.includes(d)) r.push({ x: d.x * TILE - c.camX, y: d.y * TILE + TILE - Math.max(d.h || 0, P.h) - c.camY, w: TILE, h: Math.max(d.h || 0, P.h) });
+    return r; }
+  // v0.4.7 dialog layout: full width (20..700) unless touch buttons sit over the box's rows (landscape phones), then the box narrows to
+  // the span between the D-pad and Z/X. Same font; the box grows upward with the extra lines. Re-run until the rows stop changing.
+  talkLayout(ctx, b) { const lh = UI.sizes.dialog + 8, N = GAME_DATA.world.nameTag; ctx.font = UI.font("dialog"); let x0 = 20, x1 = 700, W, h, y, top;
+    const fit = () => { W = UI.wrap(ctx, this.talk, x1 - x0 - 44); h = 34 + W.length * lh; y = this.talkBoxY(h, b); top = y - (this.talkName ? N.h : 0) - (b && !this.talkTop ? 98 : 0); };
+    for (let i = 0; i < 6; i++) { fit(); const s = Touch.freeSpan(top, y + h + (b && this.talkTop ? 98 : 0), x0, x1); if (s.l === x0 && s.r === x1) break; x0 = s.l; x1 = s.r; } // span only shrinks -> settles
+    let name = this.talkName; if (name) { ctx.font = "bold " + N.font + "px monospace"; const tx = x0 + (b ? N.xBust : N.x) - 20, sp = this.talkWith && this.talkWith.shortName; // Story: short name only if the tab would clip
+      if (sp && tx + UI.textW(ctx, name.toUpperCase()) + 2 * N.padX > x1) name = sp; ctx.font = UI.font("dialog"); }
+    this.lastTalkBox = { x: x0, y, w: x1 - x0, h, top: this.talkTop }; return { x: x0, y, w: x1 - x0, h, lines: W, lh, name }; }
+  // Box at the bottom (y = 516 - h) unless it would cover the player / speaker; then at the top. Camera untouched (clamping at map edges
+  // means it can't always move), so this works on every map edge. Returns the box y; this.talkTop says which side.
+  talkBoxY(h, bust) { const N = GAME_DATA.world.nameTag, bot = 516 - h - (bust ? 98 : 0), cover = r => r.y + r.h > bot && r.y < 516;
+    this.talkTop = this.state === "overworld" && this.talkFocus().some(cover); this.lastTalkBox = null;
+    return this.talkTop ? (this.talkName ? N.h - N.overlap + 6 : 12) : 516 - h; }
+  sparkle(ctx, x, y) { if (Sprites.draw(ctx, GAME_DATA.world.sparkleKey, x, y, TILE, TILE)) return; if (!drawCell(ctx, GAME_DATA.cardSparkleFrame, x, y)) { ctx.fillStyle = "#fff"; ctx.fillRect(x + 18, y + 14, 4, 4); } }
+  drawCoin(ctx, c, camX, camY) { const x = c.x * TILE - camX, y = c.y * TILE - camY, s = GAME_DATA.world.coin, o = (TILE - s) / 2; // Couch Cash: 32px coin + sparkle
+    if (!Sprites.draw(ctx, "ui_coin", x + o, y + o, s, s)) { ctx.fillStyle = "#e8b530"; ctx.fillRect(x + o + 4, y + o + 4, s - 8, s - 8); }
+    this.sparkle(ctx, x, y); }
+  drawHidden(ctx, h, camX, camY) { const x = h.x * TILE - camX, y = h.y * TILE - camY, s = GAME_DATA.world.marker; // plain-sight card: 64px creature marker + sparkle
+    if (!Sprites.draw(ctx, "cardmap_" + h.cardId, x + (TILE - s) / 2, y + TILE - s, s, s)) { ctx.fillStyle = "#1a1423"; ctx.fillRect(x + 18, y + 14, 28, 36); ctx.fillStyle = GAME_DATA.cards[h.cardId].color; ctx.fillRect(x + 21, y + 17, 22, 30); }
+    this.sparkle(ctx, x, y); }
   render() {
     const ctx = this.ctx; ctx.fillStyle = "#000"; ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     if (this.state === "intro") return this.renderIntro(ctx);
     if (this.state === "battle") { this.battle.render(ctx); return; }
     if (this.state === "pbattle") { this.pbattle.render(ctx); return; }
-    this.renderWorld(ctx);
+    this.renderWorld(ctx); this.lastTag = null;
     if (this.talk) { const b = this.talkBust && Sprites.get(this.talkBust) ? 96 : 0; // player portrait for self-talk lines (v0.3.4)
-      ctx.font = UI.font("dialog"); const lh = UI.sizes.dialog + 8, W = UI.wrap(ctx, this.talk, 636), h = 34 + W.length * lh, y = 516 - h; // v0.4.5 bigger text; box grows upward
-      if (b) Sprites.draw(ctx, this.talkBust, 24, y - 98, 96, 96);
-      UI.frame(ctx, 20, y, 680, h); ctx.fillStyle = UI.textColor(); W.forEach((l, i) => ctx.fillText(l, 44, y + 14 + UI.sizes.dialog + i * lh)); }
+      const L = this.talkLayout(ctx, b), N = GAME_DATA.world.nameTag, { x, y, w, h, lines: W, lh } = L;
+      if (b) Sprites.draw(ctx, this.talkBust, x + 4, this.talkTop ? y + h + 2 : y - 98, 96, 96);
+      UI.frame(ctx, x, y, w, h); ctx.fillStyle = UI.textColor(); W.forEach((l, i) => ctx.fillText(l, x + 24, y + 14 + UI.sizes.dialog + i * lh));
+      if (this.talkName) this.lastTag = UI.nameTag(ctx, x + (b ? N.xBust : N.x) - 20, y - N.h + N.overlap, L.name); }
     if (this.state === "menu") this.menu.render(ctx);
     if (this.fadeMs > 0) { ctx.fillStyle = "#000"; ctx.fillRect(0, 0, this.canvas.width, this.canvas.height); }
   }
@@ -227,7 +256,7 @@ class Game {
 }
 window.Game = Game;
 window.addEventListener("load", () => {
-  Input.init(window); Debug.init(window); Touch.init(document.getElementById("game")); TileSet.load(GAME_DATA.tileset); Sprites.load(GAME_DATA.sprites.images);
+  Input.init(window); Debug.init(window); Touch.init(document.getElementById("game")); TileSet.load(GAME_DATA.world.tileset); TileSet48.load(GAME_DATA.world.legacyTileset); Sprites.load(GAME_DATA.sprites.images);
   window.game = new Game(document.getElementById("game")); Touch.apply(window.game.settings.touchControls || "auto"); // v0.4.4 Touch Controls setting
   requestAnimationFrame(t => window.game.frame(t));
 });

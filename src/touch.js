@@ -18,6 +18,22 @@ const Touch = {
   // Fit the 720x528 canvas inside the window, keeping the aspect ratio (portrait and landscape).
   fit(canvas) { if (!canvas || !canvas.style || typeof innerWidth === "undefined") return; const k = Math.min(innerWidth / canvas.width, innerHeight / canvas.height);
     canvas.style.width = Math.floor(canvas.width * k) + "px"; canvas.style.height = Math.floor(canvas.height * k) + "px"; this.scale = k; },
+  // v0.4.7 landscape fix: where the touch buttons sit, in canvas px (720x528 space), for a W x H window. Pure math from
+  // GAME_DATA.touchUI + the fit() above (canvas centred by the body flexbox), so tests can check any phone size.
+  layout(W = typeof innerWidth !== "undefined" ? innerWidth : 720, H = typeof innerHeight !== "undefined" ? innerHeight : 528, cw0 = 720, ch0 = 528) {
+    const k = Math.min(W / cw0, H / ch0), cw = Math.floor(cw0 * k), ch = Math.floor(ch0 * k), cl = (W - cw) / 2, ct = (H - ch) / 2, sx = cw / cw0, sy = ch / ch0;
+    const rects = GAME_DATA.touchUI.buttons.map(b => { const l = b.anchor.includes("l") ? b.x : W - b.x - b.w, t = b.anchor.includes("b") ? H - b.y - b.h : b.y;
+      return { id: b.id, css: { x: l, y: t, w: b.w, h: b.h }, x: (l - cl) / sx, y: (t - ct) / sy, w: b.w / sx, h: b.h / sy }; });
+    return { W, H, canvas: { x: cl, y: ct, w: cw, h: ch }, rects };
+  },
+  // Free horizontal span [l, r] (canvas px) for a box covering rows y0..y1: buttons left of centre push l right, right of centre push r left.
+  // gap = clearance in CSS px (so the box never looks glued to a button).
+  freeSpan(y0, y1, l = 20, r = 700, gapCss = 12, lay) {
+    if (!lay && !this.enabled) return { l, r }; lay = lay || this.layout(); const gap = gapCss * 720 / lay.canvas.w;
+    for (const b0 of lay.rects) { const b = { x: b0.x - gap, y: b0.y - gap, w: b0.w + 2 * gap, h: b0.h + 2 * gap }; if (b.y >= y1 || b.y + b.h <= y0 || b.x >= r || b.x + b.w <= l) continue;
+      if (b.x + b.w / 2 < 360) l = Math.max(l, Math.ceil(b.x + b.w)); else r = Math.min(r, Math.floor(b.x)); }
+    return { l, r };
+  },
   init(canvas) {
     if (typeof document === "undefined" || !document.createElement) return;
     const fit = () => this.fit(canvas); fit(); window.addEventListener("resize", fit); window.addEventListener("orientationchange", fit);

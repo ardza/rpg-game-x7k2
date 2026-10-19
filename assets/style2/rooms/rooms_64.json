@@ -1,0 +1,777 @@
+{
+ "tileSize": 64,
+ "tileset": "tiles64/interior_64.png",
+ "cells": [
+  "floor_wood",
+  "floor_rug",
+  "floor_tile",
+  "wall",
+  "wall_window",
+  "wall_poster",
+  "door",
+  "counter",
+  "counter_till",
+  "shelf_packs",
+  "bed_head",
+  "bed_foot",
+  "desk",
+  "desk_laptop",
+  "ring_light",
+  "plant",
+  "box_pile",
+  "mat_exit",
+  "shelf_soldout"
+ ],
+ "blocking": [
+  3,
+  4,
+  5,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  18
+ ],
+ "note": "Plain style2 (no holo). 11x8 rooms = 704x512, centered on 720x528 with 8px margins (no scroll).",
+ "roomSize": {
+  "w": 11,
+  "h": 8,
+  "px": [
+   704,
+   512
+  ],
+  "canvas": [
+   720,
+   528
+  ],
+  "margin": 8
+ },
+ "bedroom": {
+  "tiles": [
+   [
+    3,
+    3,
+    3,
+    5,
+    3,
+    4,
+    4,
+    3,
+    5,
+    3,
+    3
+   ],
+   [
+    10,
+    0,
+    0,
+    0,
+    0,
+    0,
+    12,
+    13,
+    14,
+    0,
+    15
+   ],
+   [
+    11,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    16
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0
+   ],
+   [
+    15,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    3,
+    3,
+    3,
+    3,
+    3,
+    6,
+    3,
+    3,
+    3,
+    3,
+    3
+   ]
+  ],
+  "collision": [
+   [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    1
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1
+   ]
+  ],
+  "spawn": [
+   5,
+   6
+  ],
+  "exit": [
+   5,
+   7
+  ],
+  "interact": [
+   {
+    "key": "bed",
+    "tile": [
+     0,
+     1
+    ],
+    "also": [
+     [
+      0,
+      2
+     ]
+    ],
+    "trigger": "face"
+   },
+   {
+    "key": "pc",
+    "tile": [
+     7,
+     1
+    ],
+    "trigger": "face"
+   },
+   {
+    "key": "poster",
+    "tile": [
+     3,
+     0
+    ],
+    "also": [
+     [
+      8,
+      0
+     ]
+    ],
+    "trigger": "face"
+   }
+  ],
+  "npc_mom": [
+   2,
+   3
+  ],
+  "rows": [
+   "WWWPWNNWPWW",
+   "H.....KLO.p",
+   "F..........",
+   "...rrrrr..B",
+   "...rrrrr...",
+   "...rrrrr...",
+   "p..........",
+   "WWWWWDWWWWW"
+  ]
+ },
+ "shop": {
+  "tiles": [
+   [
+    3,
+    3,
+    3,
+    5,
+    3,
+    3,
+    3,
+    3,
+    5,
+    3,
+    3
+   ],
+   [
+    9,
+    9,
+    9,
+    2,
+    2,
+    2,
+    9,
+    9,
+    9,
+    18,
+    9
+   ],
+   [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   [
+    2,
+    2,
+    7,
+    7,
+    7,
+    8,
+    7,
+    7,
+    7,
+    2,
+    2
+   ],
+   [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   [
+    9,
+    9,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    9,
+    9,
+    2
+   ],
+   [
+    16,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    15,
+    2
+   ],
+   [
+    3,
+    3,
+    3,
+    3,
+    3,
+    17,
+    3,
+    3,
+    3,
+    3,
+    3
+   ]
+  ],
+  "collision": [
+   [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   [
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    1,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    1
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1
+   ],
+   [
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1
+   ],
+   [
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1
+   ]
+  ],
+  "shopkeeper_spot": [
+   5,
+   2
+  ],
+  "exit": [
+   5,
+   7
+  ],
+  "interact": [
+   {
+    "key": "shop_entry",
+    "tile": [
+     5,
+     6
+    ],
+    "trigger": "enter"
+   },
+   {
+    "key": "shelf_soldout",
+    "tile": [
+     9,
+     1
+    ],
+    "trigger": "face"
+   }
+  ],
+  "rows": [
+   "WWWPWWWWPWW",
+   "SSStttSSSXS",
+   "ttttttttttt",
+   "ttCCC$CCCtt",
+   "ttttttttttt",
+   "SSttttttSSt",
+   "Bttttttttpt",
+   "WWWWWEWWWWW"
+  ]
+ },
+ "changelog_vs_rooms_48": {
+  "bedroom": {
+   "size": "15x11 -> 11x8 (720x528 scroll -> 704x512 no-scroll, 8px margin)",
+   "spawn": {
+    "was": [
+     7,
+     8
+    ],
+    "now": [
+     5,
+     6
+    ]
+   },
+   "exit_door_tile": {
+    "was": [
+     7,
+     10
+    ],
+    "now": [
+     5,
+     7
+    ]
+   },
+   "entry_from_overworld": {
+    "was": [
+     7,
+     9
+    ],
+    "now": [
+     5,
+     6
+    ],
+    "note": "maps.bedroom.entry / roomDefs.bedroom.entry"
+   },
+   "exitTo_overworld": {
+    "unchanged": {
+     "map": "starter",
+     "x": 7,
+     "y": 5
+    },
+    "note": "overworld house door still (7,4); only the interior landing tile changes"
+   },
+   "interact_bed": {
+    "was": [
+     0,
+     1
+    ],
+    "also_was": [
+     [
+      0,
+      2
+     ]
+    ],
+    "now": [
+     0,
+     1
+    ],
+    "also_now": [
+     [
+      0,
+      2
+     ]
+    ]
+   },
+   "interact_pc": {
+    "was": [
+     8,
+     1
+    ],
+    "now": [
+     7,
+     1
+    ],
+    "note": "desk_laptop cell"
+   },
+   "interact_poster": {
+    "was": [
+     [
+      3,
+      0
+     ],
+     [
+      9,
+      0
+     ]
+    ],
+    "now": [
+     [
+      3,
+      0
+     ],
+     [
+      8,
+      0
+     ]
+    ]
+   },
+   "npc_mom": {
+    "was": null,
+    "now": [
+     2,
+     3
+    ],
+    "note": "NPC stand tile (not in rooms_48.json; was implied by preview)"
+   },
+   "ring_light_cell": {
+    "now": [
+     8,
+     1
+    ],
+    "note": "visual with desk; interact via pc at [7,1]"
+   },
+   "bg": {
+    "was": "rooms/bedroom_720x528.png",
+    "now": "rooms/bedroom_704x512.png"
+   }
+  },
+  "shop": {
+   "size": "15x11 -> 11x8",
+   "shopkeeper_spot": {
+    "was": [
+     6,
+     2
+    ],
+    "now": [
+     5,
+     2
+    ]
+   },
+   "exit_mat_tile": {
+    "was": [
+     7,
+     10
+    ],
+    "now": [
+     5,
+     7
+    ]
+   },
+   "entry_from_overworld": {
+    "was": [
+     7,
+     9
+    ],
+    "now": [
+     5,
+     6
+    ],
+    "note": "roomDefs.shop.entry"
+   },
+   "exitTo_overworld": {
+    "unchanged": {
+     "map": "starter",
+     "x": 15,
+     "y": 6
+    }
+   },
+   "interact_shop_entry": {
+    "was": [
+     7,
+     9
+    ],
+    "now": [
+     5,
+     6
+    ]
+   },
+   "interact_shelf_soldout": {
+    "was": [
+     13,
+     1
+    ],
+    "now": [
+     9,
+     1
+    ]
+   },
+   "npc_reach": {
+    "was": [
+     [
+      6,
+      3
+     ]
+    ],
+    "now": [
+     [
+      5,
+      3
+     ]
+    ],
+    "note": "face the counter from below the shopkeeper"
+   },
+   "bg": {
+    "was": "rooms/shop_interior_720x528.png",
+    "now": "rooms/shop_interior_704x512.png"
+   }
+  }
+ }
+}

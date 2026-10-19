@@ -20,12 +20,13 @@ class Player {
     }
     return false;
   }
+  // v0.4.7 y-sort row: the lower of the two rows while stepping (so walking down past a roof draws in front once on the lower row)
+  sortRow() { return this.moving ? Math.max(this.y, this.fromY) : this.y; }
   render(ctx, camX, camY) {
-    const x = this.px - camX, y = this.py - camY;
-    const sd = GAME_DATA.sprites && GAME_DATA.sprites.player;
-    if (sd) { // style2 walk sheet: 48px cells, cols = step / together / other step (loop 0,1,2,1), anchored bottom-center
-      const size = sd.cell * TILE_SCALE, frame = this.moving ? [0, 1, 2, 1][(this.steps * 2 + (this.t > 0.5 ? 1 : 0)) % 4] : sd.idle;
-      if (Sprites.draw(ctx, "player", x + TILE / 2 - size / 2, y + TILE - size, size, size, frame * sd.cell, sd.rows[this.facing] * sd.cell, sd.cell, sd.cell)) return;
+    const x = this.px - camX, y = this.py - camY, sd = GAME_DATA.sprites && GAME_DATA.sprites.player, P = GAME_DATA.world.person;
+    if (sd) { // 64x80 walk sheet: cols = step / together / other step (loop 0,1,2,1), feet on the tile bottom (y - lift)
+      const frame = this.moving ? [0, 1, 2, 1][(this.steps * 2 + (this.t > 0.5 ? 1 : 0)) % 4] : P.idle;
+      if (Sprites.draw(ctx, "player", x, y - P.lift, P.w, P.h, frame * P.w, P.rows[this.facing] * P.h, P.w, P.h)) return;
     }
     const k = PXK; ctx.fillStyle = "#f2f2f2"; ctx.fillRect(x + 3 * k, y + 2 * k, 10 * k, 12 * k);
     ctx.fillStyle = "#d33"; const [dx, dy] = DIRS[this.facing];

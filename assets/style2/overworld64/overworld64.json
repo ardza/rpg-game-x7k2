@@ -1,0 +1,96 @@
+{
+ "tile": 64,
+ "person": {
+  "cell": [
+   64,
+   80
+  ],
+  "draw": "x = tx*64, y = ty*64 - 16 (feet on tile bottom)",
+  "sheet": "3 cols (f0 step, f1 together, f2 step) x 4 rows (down, up, left, right)"
+ },
+ "buildings": [
+  {
+   "id": "house1",
+   "file": "overworld64/building_house1_384x176.png",
+   "footprint": {
+    "x": 5,
+    "y": 3,
+    "w": 6,
+    "h": 2
+   },
+   "w": 384,
+   "h": 176,
+   "overhangUp": 48,
+   "drawAt": "x = fx*64 - camX, y = fy*64 - 48 - camY",
+   "sortY": 4
+  },
+  {
+   "id": "pack_shack",
+   "file": "overworld64/building_pack_shack_320x304.png",
+   "footprint": {
+    "x": 13,
+    "y": 2,
+    "w": 5,
+    "h": 4
+   },
+   "w": 320,
+   "h": 304,
+   "overhangUp": 48,
+   "drawAt": "x = fx*64 - camX, y = fy*64 - 48 - camY",
+   "sortY": 5
+  },
+  {
+   "id": "house2",
+   "file": "overworld64/building_house2_256x176.png",
+   "footprint": {
+    "x": 21,
+    "y": 3,
+    "w": 4,
+    "h": 2
+   },
+   "w": 256,
+   "h": 176,
+   "overhangUp": 48,
+   "drawAt": "x = fx*64 - camX, y = fy*64 - 48 - camY",
+   "sortY": 4
+  },
+  {
+   "id": "cafe",
+   "file": "overworld64/building_cafe_320x176.png",
+   "footprint": {
+    "x": 26,
+    "y": 3,
+    "w": 5,
+    "h": 2
+   },
+   "w": 320,
+   "h": 176,
+   "overhangUp": 48,
+   "drawAt": "x = fx*64 - camX, y = fy*64 - 48 - camY",
+   "sortY": 4
+  },
+  {
+   "id": "hustle_hq",
+   "file": "overworld64/building_hustle_hq_256x304.png",
+   "footprint": {
+    "x": 22,
+    "y": 8,
+    "w": 4,
+    "h": 4
+   },
+   "w": 256,
+   "h": 304,
+   "overhangUp": 48,
+   "drawAt": "x = fx*64 - camX, y = fy*64 - 48 - camY",
+   "sortY": 11
+  }
+ ],
+ "lamp_post": {
+  "file": "overworld64/lamp_post_64x128.png",
+  "footprint": "1x1",
+  "draw": "y = ty*64 - 64",
+  "solid": true,
+  "note": "optional decor; mock uses (12,3)"
+ },
+ "drawOrder": "ground tiles -> y-sorted pass of buildings, decor, NPCs, player by bottom tile row (ties: buildings first) -> UI"
+}
